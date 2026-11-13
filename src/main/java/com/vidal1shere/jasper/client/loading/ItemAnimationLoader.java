@@ -1,9 +1,8 @@
-package com.vidal1shere.jasper.client.item;
+package com.vidal1shere.jasper.client.loading;
 
 import com.google.gson.JsonObject;
-import com.vidal1shere.jasper.client.keyframe.serialization.KeyframeAnimationLoader;
-import com.vidal1shere.jasper.client.keyframe.serialization.KeyframeJson;
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.item.ItemAnimation;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

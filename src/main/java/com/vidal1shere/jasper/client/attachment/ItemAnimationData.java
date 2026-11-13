@@ -1,8 +1,8 @@
 package com.vidal1shere.jasper.client.attachment;
 
+import com.vidal1shere.jasper.client.animation.AnimationPlayback;
 import com.vidal1shere.jasper.client.item.ItemAnimation;
-import com.vidal1shere.jasper.client.item.ItemAnimationLoader;
-import com.vidal1shere.jasper.client.keyframe.AnimationPlayback;
+import com.vidal1shere.jasper.client.loading.ItemAnimationLoader;
 import net.minecraft.world.InteractionHand;
 
 import java.util.EnumMap;

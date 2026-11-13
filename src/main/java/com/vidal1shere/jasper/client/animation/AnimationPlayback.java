@@ -1,6 +1,6 @@
-package com.vidal1shere.jasper.client.keyframe;
+package com.vidal1shere.jasper.client.animation;
 
-import com.vidal1shere.jasper.client.keyframe.serialization.KeyframeAnimationLoader;
+import com.vidal1shere.jasper.client.loading.KeyframeAnimationLoader;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;

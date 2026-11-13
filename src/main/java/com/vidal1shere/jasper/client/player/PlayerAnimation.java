@@ -1,7 +1,7 @@
 package com.vidal1shere.jasper.client.player;
 
-import com.vidal1shere.jasper.client.keyframe.AnimationKeyframe;
-import com.vidal1shere.jasper.client.keyframe.KeyframeAnimation;
+import com.vidal1shere.jasper.client.animation.AnimationKeyframe;
+import com.vidal1shere.jasper.client.animation.KeyframeAnimation;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

@@ -1,6 +1,6 @@
 package com.vidal1shere.jasper.client.molang;
 
-import com.vidal1shere.jasper.client.keyframe.Easing;
+import com.vidal1shere.jasper.client.animation.Easing;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

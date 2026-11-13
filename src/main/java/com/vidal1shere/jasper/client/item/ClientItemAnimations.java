@@ -1,13 +1,13 @@
 package com.vidal1shere.jasper.client.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.vidal1shere.jasper.client.ClientAttachments;
+import com.vidal1shere.jasper.client.animation.AnimationPlayback;
+import com.vidal1shere.jasper.client.animation.AnimationPose;
+import com.vidal1shere.jasper.client.animation.BonePose;
 import com.vidal1shere.jasper.client.attachment.ItemAnimationData;
-import com.vidal1shere.jasper.client.keyframe.AnimationPlayback;
-import com.vidal1shere.jasper.client.keyframe.AnimationPose;
-import com.vidal1shere.jasper.client.keyframe.BonePose;
 import com.vidal1shere.jasper.client.molang.AnimationQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
-import com.vidal1shere.jasper.client.ClientAttachments;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;

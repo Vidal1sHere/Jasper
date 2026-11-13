@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.keyframe;
+package com.vidal1shere.jasper.client.animation;
 
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.client.molang.MolangQuery;

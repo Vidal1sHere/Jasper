@@ -1,8 +1,8 @@
 package com.vidal1shere.jasper.client.attachment;
 
-import com.vidal1shere.jasper.client.keyframe.AnimationPlayback;
+import com.vidal1shere.jasper.client.animation.AnimationPlayback;
+import com.vidal1shere.jasper.client.loading.PlayerAnimationLoader;
 import com.vidal1shere.jasper.client.player.PlayerAnimation;
-import com.vidal1shere.jasper.client.player.PlayerAnimationLoader;
 import net.minecraft.world.InteractionHand;
 
 public final class PlayerAnimationData {

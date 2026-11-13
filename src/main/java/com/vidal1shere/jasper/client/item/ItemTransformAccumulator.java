@@ -2,7 +2,7 @@ package com.vidal1shere.jasper.client.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.vidal1shere.jasper.client.keyframe.BonePose;
+import com.vidal1shere.jasper.client.animation.BonePose;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;

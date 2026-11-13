@@ -1,12 +1,12 @@
-package com.vidal1shere.jasper.client.player;
+package com.vidal1shere.jasper.client.loading;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.vidal1shere.jasper.client.keyframe.KeyframeAnimation;
-import com.vidal1shere.jasper.client.keyframe.serialization.KeyframeAnimationLoader;
-import com.vidal1shere.jasper.client.keyframe.serialization.KeyframeJson;
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.animation.KeyframeAnimation;
+import com.vidal1shere.jasper.client.player.PlayerAnimation;
+import com.vidal1shere.jasper.client.player.PlayerBones;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;

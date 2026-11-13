@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.keyframe.serialization;
+package com.vidal1shere.jasper.client.loading;
 
 import com.google.common.base.Suppliers;
 import com.google.gson.JsonElement;

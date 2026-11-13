@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.keyframe;
+package com.vidal1shere.jasper.client.animation;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
