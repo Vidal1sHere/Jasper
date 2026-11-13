@@ -1,0 +1,22 @@
+{
+    "entries": [
+        {
+            "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+            "name": "JASPER_ARM_POSE",
+            "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+            "parameters": {
+                "class": "com/vidal1shere/jasper/client/player/ArmPoses",
+                "field": "ONE_HANDED"
+            }
+        },
+        {
+            "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+            "name": "JASPER_ARM_POSE_TWO_HANDED",
+            "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+            "parameters": {
+                "class": "com/vidal1shere/jasper/client/player/ArmPoses",
+                "field": "TWO_HANDED"
+            }
+        }
+    ]
+}
