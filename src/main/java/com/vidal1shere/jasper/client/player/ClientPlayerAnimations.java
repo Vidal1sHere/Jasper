@@ -2,61 +2,38 @@ package com.vidal1shere.jasper.client.player;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
-import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
-import com.vidal1shere.jasper.client.attachment.PlayerAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerData;
+import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
 import com.vidal1shere.jasper.client.molang.AnimationQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Vector3f;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientPlayerAnimations {
     private static final MolangContext CONTEXT = new MolangContext();
-    private static final TrackFrame FRAME = new TrackFrame();
-    private static final TrackFrame OVERLAY = new TrackFrame();
+    private static final List<TrackFrame> FRAMES = new ArrayList<>();
+    private static final List<Layer> FRAME_LAYERS = new ArrayList<>();
 
     private static final Matrix3f WORLD = new Matrix3f();
     private static final Matrix3f MODEL = new Matrix3f();
 
     private static int frameEntity = -1;
     private static int lookEntity = -1;
-
-    public static void play(int entityId, InteractionHand hand, ResourceLocation animation, long startTick, float speed) {
-        set(entityId, hand, false, animation, startTick, speed);
-    }
-
-    public static void stop(int entityId, long tick) {
-        PlayerAnimationData data = ClientAttachments.of(entityId, ClientAttachments.PLAYER_ANIMATIONS);
-        if (data != null) {
-            data.track().set(null, tick, 1.0F);
-        }
-    }
-
-    // A stop keeps the hand, so the fade out stays mirrored like the animation it ends
-    public static void set(int entityId, InteractionHand hand, boolean overlay, @Nullable ResourceLocation animation, long startTick, float speed) {
-        PlayerAnimationData data = ClientAttachments.of(entityId, ClientAttachments.PLAYER_ANIMATIONS);
-        if (data == null) {
-            return;
-        }
-        if (animation != null) {
-            if (overlay) {
-                data.setOverlayHand(hand);
-            } else {
-                data.setHand(hand);
-            }
-        }
-        (overlay ? data.overlay() : data.track()).set(animation, startTick, speed);
-    }
+    private static int frames;
 
     public static void clear() {
         frameEntity = -1;
@@ -68,28 +45,36 @@ public final class ClientPlayerAnimations {
 
     public static void prepare(LivingEntity entity, float partialTick, PoseStack poseStack) {
         frameEntity = -1;
+        frames = 0;
+        FRAME_LAYERS.clear();
         MODEL.set(poseStack.last().normal());
         lookEntity = entity.getId();
-        PlayerAnimationData state = entity.getExistingDataOrNull(ClientAttachments.PLAYER_ANIMATIONS);
-        if (state == null) {
+        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
+        if (data == null) {
             return;
         }
         double now = entity.level().getGameTime() + partialTick;
-        state.track().update(now);
-        state.overlay().update(now);
-        if (!state.track().isActive() && !state.overlay().isActive()) {
-            return;
+        for (Layer layer : JasperLayers.sorted()) {
+            LayerTrack track = data.existing(AnimationTarget.MODEL, layer);
+            if (track == null) {
+                continue;
+            }
+            track.track().update(now);
+            if (!track.track().isActive()) {
+                continue;
+            }
+            if (FRAMES.size() <= frames) {
+                FRAMES.add(new TrackFrame());
+            }
+            AnimationQueries.fill(CONTEXT, entity, track.hand(), partialTick);
+            fillLook(CONTEXT, entity, partialTick);
+            // Animations are written for the right arm and mirrored when the hand is on the left one
+            FRAME_LAYERS.add(layer);
+            FRAMES.get(frames++).evaluate(track.track(), now, CONTEXT, AnimationQueries.isLeftArm(entity, track.hand()) ? PlayerBones.PAIRS : null);
         }
-        evaluate(FRAME, state.track(), state.hand(), entity, now, partialTick);
-        evaluate(OVERLAY, state.overlay(), state.overlayHand(), entity, now, partialTick);
-        frameEntity = entity.getId();
-    }
-
-    private static void evaluate(TrackFrame frame, AnimationTrack track, InteractionHand hand, LivingEntity entity, double now, float partialTick) {
-        AnimationQueries.fill(CONTEXT, entity, hand, partialTick);
-        fillLook(CONTEXT, entity, partialTick);
-        // Animations are written for the right arm and mirrored when the hand is on the left one
-        frame.evaluate(track, now, CONTEXT, AnimationQueries.isLeftArm(entity, hand) ? PlayerBones.PAIRS : null);
+        if (frames > 0) {
+            frameEntity = entity.getId();
+        }
     }
 
     // Outside of a render the look queries keep the head rotation
@@ -108,30 +93,34 @@ public final class ClientPlayerAnimations {
         return frameEntity == entity.getId();
     }
 
+    public static boolean isAnimating(Entity entity, Layer layer) {
+        return frameEntity == entity.getId() && FRAME_LAYERS.contains(layer);
+    }
+
     public static void applyRoot(PoseStack poseStack) {
-        FRAME.transform(poseStack, PlayerBones.ROOT, PlayerBones.ROOT_PIVOT);
-        OVERLAY.transform(poseStack, PlayerBones.ROOT, PlayerBones.ROOT_PIVOT);
+        for (int i = 0; i < frames; i++) {
+            FRAMES.get(i).transform(poseStack, PlayerBones.ROOT, PlayerBones.ROOT_PIVOT);
+        }
     }
 
     public static void applyItem(HumanoidArm arm, PoseStack poseStack) {
         boolean right = arm == HumanoidArm.RIGHT;
         String bone = right ? PlayerBones.RIGHT_ITEM : PlayerBones.LEFT_ITEM;
         Vector3f pivot = right ? PlayerBones.RIGHT_ITEM_PIVOT : PlayerBones.LEFT_ITEM_PIVOT;
-        FRAME.transform(poseStack, bone, pivot);
-        OVERLAY.transform(poseStack, bone, pivot);
+        for (int i = 0; i < frames; i++) {
+            FRAMES.get(i).transform(poseStack, bone, pivot);
+        }
     }
 
     public static void applyModel(PlayerModel<?> model) {
-        applyModel(FRAME, model);
-        applyModel(OVERLAY, model);
-    }
-
-    private static void applyModel(TrackFrame frame, PlayerModel<?> model) {
-        frame.apply(PlayerBones.HEAD, model.head, model.hat);
-        frame.apply(PlayerBones.TORSO, model.body, model.jacket);
-        frame.apply(PlayerBones.RIGHT_ARM, model.rightArm, model.rightSleeve);
-        frame.apply(PlayerBones.LEFT_ARM, model.leftArm, model.leftSleeve);
-        frame.apply(PlayerBones.RIGHT_LEG, model.rightLeg, model.rightPants);
-        frame.apply(PlayerBones.LEFT_LEG, model.leftLeg, model.leftPants);
+        for (int i = 0; i < frames; i++) {
+            TrackFrame frame = FRAMES.get(i);
+            frame.apply(PlayerBones.HEAD, model.head, model.hat);
+            frame.apply(PlayerBones.TORSO, model.body, model.jacket);
+            frame.apply(PlayerBones.RIGHT_ARM, model.rightArm, model.rightSleeve);
+            frame.apply(PlayerBones.LEFT_ARM, model.leftArm, model.leftSleeve);
+            frame.apply(PlayerBones.RIGHT_LEG, model.rightLeg, model.rightPants);
+            frame.apply(PlayerBones.LEFT_LEG, model.leftLeg, model.leftPants);
+        }
     }
 }

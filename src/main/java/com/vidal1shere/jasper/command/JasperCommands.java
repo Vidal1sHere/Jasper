@@ -1,21 +1,25 @@
 package com.vidal1shere.jasper.command;
 
-import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.JasperAnimations;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
+import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -27,109 +31,70 @@ import java.util.Locale;
 
 @EventBusSubscriber(modid = Jasper.MOD_ID)
 public final class JasperCommands {
+    private static final SuggestionProvider<CommandSourceStack> LAYERS = (context, builder) -> SharedSuggestionProvider.suggestResource(JasperLayers.sorted().stream().map(Layer::id), builder);
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> itemPlay = Commands.literal("play");
-        LiteralArgumentBuilder<CommandSourceStack> itemStop = Commands.literal("stop");
-        LiteralArgumentBuilder<CommandSourceStack> itemOverlay = Commands.literal("set");
-        LiteralArgumentBuilder<CommandSourceStack> itemClear = Commands.literal("clear");
-        LiteralArgumentBuilder<CommandSourceStack> playerPlay = Commands.literal("play");
-        LiteralArgumentBuilder<CommandSourceStack> playerOverlay = Commands.literal("set");
-        for (InteractionHand hand : InteractionHand.values()) {
-            String name = hand.name().toLowerCase(Locale.ROOT);
-            itemPlay.then(Commands.literal(name).then(animation(context -> play(context, hand, false, false))));
-            itemStop.then(Commands.literal(name).executes(context -> stopItem(context, hand)));
-            itemOverlay.then(Commands.literal(name).then(animation(context -> play(context, hand, false, true))));
-            itemClear.then(Commands.literal(name).executes(context -> clearItemOverlay(context, hand)));
-            playerPlay.then(Commands.literal(name).then(animation(context -> play(context, hand, true, false))));
-            playerOverlay.then(Commands.literal(name).then(animation(context -> play(context, hand, true, true))));
+        LiteralArgumentBuilder<CommandSourceStack> play = Commands.literal("play");
+        LiteralArgumentBuilder<CommandSourceStack> stop = Commands.literal("stop");
+        var playLayer = Commands.argument("layer", ResourceLocationArgument.id()).suggests(LAYERS);
+        var stopLayer = Commands.argument("layer", ResourceLocationArgument.id()).suggests(LAYERS);
+        for (AnimationTarget target : AnimationTarget.values()) {
+            String name = target.name().toLowerCase(Locale.ROOT);
+            playLayer.then(Commands.literal(name).then(Commands.argument("animation", ResourceLocationArgument.id())
+                    .executes(context -> play(context, target))
+                    .then(Commands.argument("speed", FloatArgumentType.floatArg(0.01F)).executes(context -> play(context, target))
+                            .then(Commands.argument("loop", BoolArgumentType.bool()).executes(context -> play(context, target))))));
+            stopLayer.then(Commands.literal(name).executes(context -> stop(context, target)));
         }
         event.getDispatcher().register(Commands.literal(Jasper.MOD_ID)
                 .requires(source -> source.hasPermission(2))
-                .then(Commands.literal("item").then(itemPlay).then(itemStop)
-                        .then(Commands.literal("overlay").then(itemOverlay).then(itemClear)))
-                .then(Commands.literal("player").then(playerPlay).then(Commands.literal("stop").executes(JasperCommands::stopPlayer))
-                        .then(Commands.literal("overlay").then(playerOverlay).then(Commands.literal("clear").executes(JasperCommands::clearPlayerOverlay))))
-                .then(Commands.literal("entity")
-                        .then(Commands.literal("play").then(Commands.argument("target", EntityArgument.entity()).then(animation(context -> playEntity(context, false)))))
-                        .then(Commands.literal("stop").then(Commands.argument("target", EntityArgument.entity()).executes(context -> stopEntity(context, false))))
-                        .then(Commands.literal("overlay")
-                                .then(Commands.literal("set").then(Commands.argument("target", EntityArgument.entity()).then(animation(context -> playEntity(context, true)))))
-                                .then(Commands.literal("clear").then(Commands.argument("target", EntityArgument.entity()).executes(context -> stopEntity(context, true)))))));
+                .then(play.then(Commands.argument("entities", EntityArgument.entities()).then(playLayer)))
+                .then(stop.then(Commands.argument("entities", EntityArgument.entities()).then(stopLayer))));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ResourceLocation> animation(Command<CommandSourceStack> command) {
-        return Commands.argument("animation", ResourceLocationArgument.id()).executes(command)
-                .then(Commands.argument("speed", FloatArgumentType.floatArg(0.01F)).executes(command));
-    }
-
-    private static int play(CommandContext<CommandSourceStack> context, InteractionHand hand, boolean playerLayer, boolean overlay) throws CommandSyntaxException {
-        ServerPlayer player = context.getSource().getPlayerOrException();
+    private static int play(CommandContext<CommandSourceStack> context, AnimationTarget target) throws CommandSyntaxException {
+        Layer layer = layer(context);
         ResourceLocation animation = ResourceLocationArgument.getId(context, "animation");
-        float speed = context.getNodes().stream().anyMatch(node -> node.getNode().getName().equals("speed")) ? FloatArgumentType.getFloat(context, "speed") : 1.0F;
-        if (playerLayer) {
-            if (overlay) {
-                JasperAnimations.setPlayerOverlay(player, hand, animation, speed);
-            } else {
-                JasperAnimations.playPlayer(player, hand, animation, speed);
+        float speed = has(context, "speed") ? FloatArgumentType.getFloat(context, "speed") : 1.0F;
+        boolean loop = has(context, "loop") && BoolArgumentType.getBool(context, "loop");
+        PlayOptions options = new PlayOptions(speed, target == AnimationTarget.OFF_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, loop);
+        int count = 0;
+        for (Entity entity : EntityArgument.getEntities(context, "entities")) {
+            if (entity instanceof LivingEntity living) {
+                JasperAnimations.play(living, layer, target, animation, options);
+                count++;
             }
-        } else if (overlay) {
-            JasperAnimations.setItemOverlay(player, hand, animation, speed);
-        } else {
-            JasperAnimations.playItem(player, hand, animation, speed);
         }
-        context.getSource().sendSuccess(() -> Component.literal("Playing " + animation), false);
-        return 1;
+        int played = count;
+        context.getSource().sendSuccess(() -> Component.literal("Playing " + animation + " on " + layer.id() + " (" + target.name().toLowerCase(Locale.ROOT) + (loop ? ", looped" : "") + (layer.policy().persistent() ? ", saved" : "") + ") for " + played + " entities"), false);
+        return played;
     }
 
-    private static int stopItem(CommandContext<CommandSourceStack> context, InteractionHand hand) throws CommandSyntaxException {
-        JasperAnimations.stopItem(context.getSource().getPlayerOrException(), hand);
-        return 1;
+    private static boolean has(CommandContext<CommandSourceStack> context, String argument) {
+        return context.getNodes().stream().anyMatch(node -> node.getNode().getName().equals(argument));
     }
 
-    private static int stopPlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        JasperAnimations.stopPlayer(context.getSource().getPlayerOrException());
-        return 1;
-    }
-
-    private static int playEntity(CommandContext<CommandSourceStack> context, boolean overlay) throws CommandSyntaxException {
-        LivingEntity entity = living(context);
-        ResourceLocation animation = ResourceLocationArgument.getId(context, "animation");
-        float speed = context.getNodes().stream().anyMatch(node -> node.getNode().getName().equals("speed")) ? FloatArgumentType.getFloat(context, "speed") : 1.0F;
-        if (overlay) {
-            JasperAnimations.setEntityOverlay(entity, animation, speed);
-        } else {
-            JasperAnimations.playEntity(entity, animation, speed);
+    private static int stop(CommandContext<CommandSourceStack> context, AnimationTarget target) throws CommandSyntaxException {
+        Layer layer = layer(context);
+        int count = 0;
+        for (Entity entity : EntityArgument.getEntities(context, "entities")) {
+            if (entity instanceof LivingEntity living) {
+                JasperAnimations.stop(living, layer, target);
+                count++;
+            }
         }
-        context.getSource().sendSuccess(() -> Component.literal("Playing " + animation + " on " + entity.getName().getString()), false);
-        return 1;
+        int stopped = count;
+        context.getSource().sendSuccess(() -> Component.literal("Stopped " + layer.id() + " on " + stopped + " entities (drivers keep running)"), false);
+        return stopped;
     }
 
-    private static int stopEntity(CommandContext<CommandSourceStack> context, boolean overlay) throws CommandSyntaxException {
-        LivingEntity entity = living(context);
-        if (overlay) {
-            JasperAnimations.clearEntityOverlay(entity);
-        } else {
-            JasperAnimations.stopEntity(entity);
+    private static Layer layer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ResourceLocation id = ResourceLocationArgument.getId(context, "layer");
+        Layer layer = JasperLayers.get(id);
+        if (layer == null) {
+            throw new SimpleCommandExceptionType(Component.literal("Unknown animation layer " + id)).create();
         }
-        return 1;
-    }
-
-    private static LivingEntity living(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        Entity entity = EntityArgument.getEntity(context, "target");
-        if (!(entity instanceof LivingEntity living)) {
-            throw new SimpleCommandExceptionType(Component.literal("Expected a living entity")).create();
-        }
-        return living;
-    }
-
-    private static int clearItemOverlay(CommandContext<CommandSourceStack> context, InteractionHand hand) throws CommandSyntaxException {
-        JasperAnimations.clearItemOverlay(context.getSource().getPlayerOrException(), hand);
-        return 1;
-    }
-
-    private static int clearPlayerOverlay(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        JasperAnimations.clearPlayerOverlay(context.getSource().getPlayerOrException());
-        return 1;
+        return layer;
     }
 }

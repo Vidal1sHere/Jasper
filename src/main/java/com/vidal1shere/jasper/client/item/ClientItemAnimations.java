@@ -6,11 +6,14 @@ import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
-import com.vidal1shere.jasper.client.attachment.ItemAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerData;
+import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
 import com.vidal1shere.jasper.client.molang.AnimationQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import org.jetbrains.annotations.Nullable;
@@ -34,54 +37,50 @@ public final class ClientItemAnimations {
         SUPPRESSORS.add(suppressor);
     }
 
-    public static void set(int entityId, InteractionHand hand, @Nullable ResourceLocation id, long startTick, float speed) {
-        set(entityId, hand, false, id, startTick, speed);
-    }
-
-    public static void set(int entityId, InteractionHand hand, boolean overlay, @Nullable ResourceLocation id, long startTick, float speed) {
-        ItemAnimationData data = ClientAttachments.of(entityId, ClientAttachments.ITEM_ANIMATIONS);
-        if (data != null) {
-            (overlay ? data.overlay(hand) : data.track(hand)).set(id, startTick, speed);
-        }
-    }
-
     public static boolean isActive(LivingEntity entity, InteractionHand hand, float partialTick) {
-        ItemAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ITEM_ANIMATIONS);
+        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
         if (data == null || isSuppressed(entity)) {
             return false;
         }
         double now = entity.level().getGameTime() + partialTick;
-        return isActive(data.tracks().get(hand), now) || isActive(data.overlays().get(hand), now);
+        for (Layer layer : JasperLayers.sorted()) {
+            if (isActive(data.existing(target(hand), layer), now)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, MultiBufferSource buffer, float partialTick) {
-        ItemAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ITEM_ANIMATIONS);
+        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
         if (data == null || isSuppressed(entity)) {
             return;
         }
         double now = entity.level().getGameTime() + partialTick;
-        AnimationTrack track = data.tracks().get(hand);
-        AnimationTrack overlay = data.overlays().get(hand);
-        boolean main = isActive(track, now);
-        if (!main && !isActive(overlay, now)) {
-            return;
-        }
-        AnimationQueries.fill(CONTEXT, entity, hand, partialTick);
-        boolean mirrored = AnimationQueries.isLeftArm(entity, hand);
-        if (main) {
-            apply(track, now, mirrored, poseStack, buffer);
-        }
-        if (isActive(overlay, now)) {
-            apply(overlay, now, mirrored, poseStack, buffer);
+        boolean filled = false;
+        for (Layer layer : JasperLayers.sorted()) {
+            LayerTrack track = data.existing(target(hand), layer);
+            if (!isActive(track, now)) {
+                continue;
+            }
+            if (!filled) {
+                AnimationQueries.fill(CONTEXT, entity, hand, partialTick);
+                filled = true;
+            }
+            apply(track.track(), now, AnimationQueries.isLeftArm(entity, hand), poseStack, buffer);
         }
     }
 
-    private static boolean isActive(@Nullable AnimationTrack track, double now) {
+    public static AnimationTarget target(InteractionHand hand) {
+        return hand == InteractionHand.MAIN_HAND ? AnimationTarget.MAIN_HAND : AnimationTarget.OFF_HAND;
+    }
+
+    private static boolean isActive(@Nullable LayerTrack track, double now) {
         if (track == null) {
             return false;
         }
-        track.update(now);
-        return track.isActive();
+        track.track().update(now);
+        return track.track().isActive();
     }
 
     private static void apply(AnimationTrack track, double now, boolean mirrored, PoseStack poseStack, MultiBufferSource buffer) {

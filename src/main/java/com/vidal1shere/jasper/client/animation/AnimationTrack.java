@@ -18,9 +18,14 @@ public final class AnimationTrack {
     // Bounds the stack when animations arrive faster than they fade
     public static final int MAX_LAYERS = 8;
 
-    private record Entry(@Nullable ResourceLocation id, long startTick, float speed) {
-        public float seconds(double now) {
-            return (float) Math.max(0.0, (now - startTick) / 20.0 * speed);
+    private record Entry(@Nullable ResourceLocation id, long startTick, float speed, boolean loop) {
+        public float seconds(double now, KeyframeAnimation animation) {
+            float seconds = (float) Math.max(0.0, (now - startTick) / 20.0 * speed);
+            return loops(animation) && animation.lengthInSeconds() > 0.0F ? seconds % animation.lengthInSeconds() : seconds;
+        }
+
+        public boolean loops(KeyframeAnimation animation) {
+            return loop && animation.loop() == KeyframeAnimation.LoopType.PLAY_ONCE;
         }
     }
 
@@ -33,22 +38,22 @@ public final class AnimationTrack {
 
     public AnimationTrack(JasperAnimationLoader loader) {
         this.loader = loader;
-        layers.add(new Layer(new Entry(null, 0L, 1.0F), 0.0, 0.0F));
+        layers.add(new Layer(new Entry(null, 0L, 1.0F, false), 0.0, 0.0F));
     }
 
-    public void set(@Nullable ResourceLocation id, long startTick, float speed) {
+    public void set(@Nullable ResourceLocation id, long startTick, float speed, boolean loop) {
         JasperAnimation fading = id == null ? animation(layers.size() - 1) : loader.get(id);
-        push(new Entry(id, startTick, speed), startTick, fading == null ? 0.0F : fading.keyframes().blendTicks());
+        push(new Entry(id, startTick, speed, loop), startTick, fading == null ? 0.0F : fading.keyframes().blendTicks());
     }
 
     // Ends a finished play once animation with an empty layer at its end, then drops the layers hidden by a fully faded one
     public void update(double now) {
         Layer top = layers.getLast();
         JasperAnimation animation = animation(layers.size() - 1);
-        if (animation != null && animation.keyframes().loop() == KeyframeAnimation.LoopType.PLAY_ONCE) {
+        if (animation != null && animation.keyframes().loop() == KeyframeAnimation.LoopType.PLAY_ONCE && !top.entry().loops(animation.keyframes())) {
             double end = top.entry().startTick() + animation.keyframes().lengthInSeconds() * 20.0 / top.entry().speed();
             if (now >= end) {
-                push(new Entry(null, (long) end, 1.0F), end, animation.keyframes().blendTicks());
+                push(new Entry(null, (long) end, 1.0F, false), end, animation.keyframes().blendTicks());
             }
         }
         int hidden = 0;
@@ -95,7 +100,7 @@ public final class AnimationTrack {
         pose.reset();
         JasperAnimation animation = animation(i);
         if (animation != null) {
-            KeyframeAnimations.evaluate(animation.keyframes(), layers.get(i).entry().seconds(now), context, pose);
+            KeyframeAnimations.evaluate(animation.keyframes(), layers.get(i).entry().seconds(now, animation.keyframes()), context, pose);
         }
         return animation;
     }

@@ -1,5 +1,6 @@
 package com.vidal1shere.jasper.client.animation.keyframe;
 
+import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import net.minecraft.client.animation.AnimationChannel;
 import net.minecraft.client.animation.AnimationDefinition;
@@ -14,10 +15,14 @@ import java.util.Map;
 @OnlyIn(Dist.CLIENT)
 public final class VanillaAnimations {
     public static JasperAnimation convert(AnimationDefinition definition) {
-        return convert(definition, definition.looping() ? KeyframeAnimation.LoopType.LOOP : KeyframeAnimation.LoopType.PLAY_ONCE);
+        return convert(definition, JasperAnimation.Look.NONE);
     }
 
-    public static JasperAnimation convert(AnimationDefinition definition, KeyframeAnimation.LoopType loop) {
+    public static JasperAnimation convert(AnimationDefinition definition, JasperAnimation.Look look) {
+        return convert(definition, definition.looping() ? KeyframeAnimation.LoopType.LOOP : KeyframeAnimation.LoopType.PLAY_ONCE, look);
+    }
+
+    public static JasperAnimation convert(AnimationDefinition definition, KeyframeAnimation.LoopType loop, JasperAnimation.Look look) {
         KeyframeAnimation.Builder builder = KeyframeAnimation.builder(definition.lengthInSeconds()).loop(loop);
         for (Map.Entry<String, List<AnimationChannel>> bone : definition.boneAnimations().entrySet()) {
             for (AnimationChannel channel : bone.getValue()) {
@@ -37,7 +42,7 @@ public final class VanillaAnimations {
                 }
             }
         }
-        return new JasperAnimation(builder.build());
+        return new JasperAnimation(builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT, false);
     }
 
     private static AnimationKeyframe keyframe(Keyframe keyframe, float offset) {

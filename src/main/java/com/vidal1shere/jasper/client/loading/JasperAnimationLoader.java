@@ -48,7 +48,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
 
     public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", Set.of(ClientItemAnimations.BONE), PIXEL_UNITS, Set.of("pivot"));
     public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, MODEL_UNITS, POSE_FIELDS);
-    public static final JasperAnimationLoader ARM_POSE = new JasperAnimationLoader("jasper/animation/arm_pose", "arm pose", PlayerBones.ARM_POSE, MODEL_UNITS, POSE_FIELDS);
     public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, MODEL_UNITS, POSE_FIELDS);
 
     private final String directory;
@@ -73,7 +72,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(ITEM);
         event.registerReloadListener(PLAYER);
-        event.registerReloadListener(ARM_POSE);
         event.registerReloadListener(ENTITY);
     }
 

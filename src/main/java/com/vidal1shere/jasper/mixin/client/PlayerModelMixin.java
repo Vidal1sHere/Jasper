@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.mixin.client;
 
-import com.vidal1shere.jasper.client.player.ArmPoses;
 import com.vidal1shere.jasper.client.player.ClientPlayerAnimations;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
@@ -36,9 +35,6 @@ public abstract class PlayerModelMixin<T extends LivingEntity> extends HumanoidM
 
     @Inject(method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V", at = @At("RETURN"))
     private void jasper$applyPlayerAnimation(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
-        if (ArmPoses.applyModel((PlayerModel<?>) (Object) this, entity)) {
-            jasper$animated = true;
-        }
         if (ClientPlayerAnimations.isAnimating(entity)) {
             jasper$animated = true;
             ClientPlayerAnimations.applyModel((PlayerModel<?>) (Object) this);

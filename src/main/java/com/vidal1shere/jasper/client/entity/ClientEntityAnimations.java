@@ -1,14 +1,21 @@
 package com.vidal1shere.jasper.client.entity;
 
 import com.vidal1shere.jasper.client.ClientAttachments;
+import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.keyframe.KeyframeAnimation;
-import com.vidal1shere.jasper.client.attachment.EntityAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerData;
+import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.client.molang.AnimationQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.entity.AnimatedEntity;
+import com.vidal1shere.jasper.layer.AnimationDriver;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
+import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -16,70 +23,74 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientEntityAnimations {
     private static final MolangContext CONTEXT = new MolangContext();
-    private static final TrackFrame MAIN = new TrackFrame();
-    private static final TrackFrame OVERLAY = new TrackFrame();
+    private static final List<TrackFrame> FRAMES = new ArrayList<>();
     private static final Set<String> BONES = new HashSet<>();
 
-    public static void set(int entityId, boolean overlay, @Nullable ResourceLocation animation, long startTick, float speed) {
-        EntityAnimationData data = ClientAttachments.of(entityId, ClientAttachments.ENTITY_ANIMATIONS);
-        if (data == null) {
-            return;
-        }
-        if (overlay) {
-            data.overlay().set(animation, startTick, speed);
-        } else {
-            data.setAction(animation, startTick, speed);
-        }
-    }
-
     public static <T extends LivingEntity & AnimatedEntity> void apply(T entity, AnimatedModel<T> model, float ageInTicks, float netHeadYaw, float headPitch) {
-        EntityAnimationData data = entity.getData(ClientAttachments.ENTITY_ANIMATIONS);
+        LayerData data = entity.getData(ClientAttachments.LAYERS);
         float partialTick = ageInTicks - entity.tickCount;
         double now = entity.level().getGameTime() + partialTick;
-        select(entity, data, now);
-        data.main().update(now);
-        data.overlay().update(now);
+        drive(entity, data, now);
         AnimationQueries.fill(CONTEXT, entity, InteractionHand.MAIN_HAND, partialTick);
-        MAIN.evaluate(data.main(), now, CONTEXT, null);
-        OVERLAY.evaluate(data.overlay(), now, CONTEXT, null);
-        apply(MAIN, model);
-        look(model.head(), netHeadYaw, headPitch);
-        apply(OVERLAY, model);
-    }
-
-    // Before the track updates, so a finished action hands over to the base instead of fading to nothing
-    private static void select(AnimatedEntity entity, EntityAnimationData data, double now) {
-        ResourceLocation action = data.action();
-        if (action != null && alive(action, data.actionStart(), data.actionSpeed(), now)) {
-            if (!data.showingAction() || !action.equals(data.shown()) || data.actionStart() != data.shownStart()) {
-                data.main().set(action, data.actionStart(), data.actionSpeed());
-                data.setShown(action, data.actionStart(), true);
+        int frames = 0;
+        for (Layer layer : JasperLayers.sorted()) {
+            LayerTrack track = data.existing(AnimationTarget.MODEL, layer);
+            if (track == null) {
+                continue;
             }
-            return;
+            track.track().update(now);
+            if (!track.track().isActive()) {
+                continue;
+            }
+            if (FRAMES.size() <= frames) {
+                FRAMES.add(new TrackFrame());
+            }
+            TrackFrame frame = FRAMES.get(frames++);
+            frame.evaluate(track.track(), now, CONTEXT, null);
+            apply(frame, model);
         }
-        ResourceLocation base = entity.isMoving() ? entity.walkAnimation() : entity.idleAnimation();
-        if (data.showingAction() || !base.equals(data.shown())) {
-            long start = (long) now;
-            data.main().set(base, start, 1.0F);
-            data.setShown(base, start, false);
+        look(frames, model.head(), netHeadYaw, headPitch);
+    }
+
+    // Before the tracks update, so a play once that just ended hands over to the driver instead of fading to nothing
+    private static <T extends LivingEntity & AnimatedEntity> void drive(T entity, LayerData data, double now) {
+        for (Layer layer : JasperLayers.sorted()) {
+            AnimationDriver driver = entity.driver(layer, AnimationTarget.MODEL);
+            if (driver == null) {
+                continue;
+            }
+            LayerTrack track = data.track(AnimationTarget.MODEL, layer, JasperAnimationLoader.ENTITY);
+            if (track.played() != null) {
+                if (alive(track.played(), track.playedStart(), track.playedOptions(), now)) {
+                    continue;
+                }
+                track.endPlay();
+            }
+            ResourceLocation pick = driver.pick(entity);
+            if (!Objects.equals(pick, track.driven())) {
+                track.track().set(pick, (long) now, 1.0F, false);
+                track.setDriven(pick);
+            }
         }
     }
 
-    private static boolean alive(ResourceLocation id, long start, float speed, double now) {
+    private static boolean alive(ResourceLocation id, long start, PlayOptions options, double now) {
         JasperAnimation animation = JasperAnimationLoader.ENTITY.get(id);
         if (animation == null) {
             return false;
         }
         KeyframeAnimation keyframes = animation.keyframes();
-        return keyframes.loop() != KeyframeAnimation.LoopType.PLAY_ONCE || now < start + keyframes.lengthInSeconds() * 20.0 / speed;
+        return options.loop() || keyframes.loop() != KeyframeAnimation.LoopType.PLAY_ONCE || now < start + keyframes.lengthInSeconds() * 20.0 / options.speed();
     }
 
     private static void apply(TrackFrame frame, AnimatedModel<?> model) {
@@ -98,17 +109,25 @@ public final class ClientEntityAnimations {
         }
     }
 
-    // On the axes the main animations let follow the look, by the weight of those animations
-    private static void look(ModelPart head, float netHeadYaw, float headPitch) {
+    // From the top layer down, each one hides by its replace weight the look of the layers below it
+    private static void look(int frames, ModelPart head, float netHeadYaw, float headPitch) {
         float pitch = 0.0F;
         float yaw = 0.0F;
-        for (int i = 0; i < MAIN.size(); i++) {
-            JasperAnimation animation = MAIN.animation(i);
-            if (animation != null) {
-                float weight = MAIN.weight(i);
-                pitch += animation.look().pitch() ? weight : 0.0F;
-                yaw += animation.look().yaw() ? weight : 0.0F;
+        float visible = 1.0F;
+        for (int f = frames - 1; f >= 0 && visible > 0.0F; f--) {
+            TrackFrame frame = FRAMES.get(f);
+            float covered = 0.0F;
+            for (int i = 0; i < frame.size(); i++) {
+                JasperAnimation animation = frame.animation(i);
+                if (animation == null) {
+                    continue;
+                }
+                float weight = frame.weight(i);
+                pitch += animation.look().pitch() ? visible * weight : 0.0F;
+                yaw += animation.look().yaw() ? visible * weight : 0.0F;
+                covered += animation.mode() == BlendMode.REPLACE ? weight : 0.0F;
             }
+            visible *= 1.0F - Math.min(1.0F, covered);
         }
         head.xRot += pitch * (headPitch * Mth.DEG_TO_RAD - head.getInitialPose().xRot);
         head.yRot += yaw * (netHeadYaw * Mth.DEG_TO_RAD - head.getInitialPose().yRot);

@@ -1,11 +1,9 @@
 package com.vidal1shere.jasper.attachment.animation;
 
+import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 
-public record PlayingAnimation(AnimationLayer layer, Channel channel, InteractionHand hand, ResourceLocation animation, long startTick, float speed, Item item) {
-    public AnimationSlot slot() {
-        return AnimationSlot.of(layer, channel, hand);
-    }
+// The item is the one held in the hand when it started, for layers that end when it changes
+public record PlayingAnimation(AnimationSlot slot, ResourceLocation animation, long startTick, PlayOptions options, Item item) {
 }

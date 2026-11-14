@@ -1,10 +1,19 @@
 package com.vidal1shere.jasper.entity;
 
+import com.vidal1shere.jasper.JasperAnimations;
+import com.vidal1shere.jasper.client.ClientAnimations;
+import com.vidal1shere.jasper.layer.AnimationDriver;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
+import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
+import org.jetbrains.annotations.Nullable;
 
-// Read on the client every frame to pick the base animation, so the base never needs a packet
 public interface AnimatedEntity {
+    AnimationDriver LOCOMOTION = entity -> ((AnimatedEntity) entity).isMoving() ? ((AnimatedEntity) entity).walkAnimation() : ((AnimatedEntity) entity).idleAnimation();
+
     ResourceLocation idleAnimation();
 
     ResourceLocation walkAnimation();
@@ -15,5 +24,38 @@ public interface AnimatedEntity {
         double dx = entity.getX() - entity.xo;
         double dz = entity.getZ() - entity.zo;
         return dx * dx + dz * dz > 1.0E-4;
+    }
+
+    // Plays on the base, over its driver until it ends or is stopped; on the server it is synced, on the client it only plays there
+    default void setAnimation(ResourceLocation animation) {
+        setAnimation(JasperLayers.BASE, animation);
+    }
+
+    default void setAnimation(Layer layer, ResourceLocation animation) {
+        LivingEntity entity = (LivingEntity) this;
+        if (entity.level().isClientSide()) {
+            ClientAnimations.play(entity, layer, AnimationTarget.MODEL, animation, PlayOptions.DEFAULT);
+        } else {
+            JasperAnimations.play(entity, layer, AnimationTarget.MODEL, animation, PlayOptions.DEFAULT);
+        }
+    }
+
+    default void stopAnimation() {
+        stopAnimation(JasperLayers.BASE);
+    }
+
+    default void stopAnimation(Layer layer) {
+        LivingEntity entity = (LivingEntity) this;
+        if (entity.level().isClientSide()) {
+            ClientAnimations.stop(entity, layer, AnimationTarget.MODEL);
+        } else {
+            JasperAnimations.stop(entity, layer, AnimationTarget.MODEL);
+        }
+    }
+
+    // Read on the client every frame; the default walks or idles on the base of the model
+    @Nullable
+    default AnimationDriver driver(Layer layer, AnimationTarget target) {
+        return layer == JasperLayers.BASE && target == AnimationTarget.MODEL ? LOCOMOTION : null;
     }
 }

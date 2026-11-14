@@ -1,28 +1,27 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
-license="${mod_license}"
+license="MIT"
 
 [[mods]]
-modId="${mod_id}"
-version="${mod_version}"
-displayName="${mod_name}"
+modId="jasper"
+version="1.0.0"
+displayName="Jasper"
 authors="Vidal1sHere"
 description='''
-Keyframe animations for the held item and the player model.
+Keyframe animations for the held item, player model and entities.
 '''
-enumExtensions="META-INF/enumextensions.json"
 
 [[mixins]]
 config="jasper.mixins.json"
 
-[[dependencies.${mod_id}]]
+[[dependencies.jasper]]
 modId="neoforge"
 type="required"
 versionRange="[${neo_version},)"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.jasper]]
 modId="minecraft"
 type="required"
 versionRange="${minecraft_version_range}"

@@ -6,8 +6,7 @@
     "client.ItemInHandLayerMixin",
     "client.ItemInHandRendererMixin",
     "client.LivingEntityRendererMixin",
-    "client.PlayerModelMixin",
-    "client.PlayerRendererMixin"
+    "client.PlayerModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

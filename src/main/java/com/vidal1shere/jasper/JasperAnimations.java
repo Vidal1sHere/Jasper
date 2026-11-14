@@ -1,112 +1,58 @@
 package com.vidal1shere.jasper;
 
 import com.vidal1shere.jasper.attachment.AnimationData;
-import com.vidal1shere.jasper.attachment.EntityOverlayData;
-import com.vidal1shere.jasper.attachment.animation.AnimationLayer;
 import com.vidal1shere.jasper.attachment.animation.AnimationSlot;
-import com.vidal1shere.jasper.attachment.animation.Channel;
 import com.vidal1shere.jasper.attachment.animation.PlayingAnimation;
+import com.vidal1shere.jasper.attachment.savedanimation.SavedAnimation;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.layer.EndCondition;
+import com.vidal1shere.jasper.layer.JasperLayers;
+import com.vidal1shere.jasper.layer.Layer;
+import com.vidal1shere.jasper.layer.PlayOptions;
 import com.vidal1shere.jasper.network.JasperNetwork;
 import com.vidal1shere.jasper.registry.JasperAttachments;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+// The server side of the animations: synced to the entity and its watchers, ended and saved by the policy of each layer
 @EventBusSubscriber(modid = Jasper.MOD_ID)
 public final class JasperAnimations {
-    public static long playItem(ServerPlayer player, InteractionHand hand, ResourceLocation animation, float speed) {
-        return start(player, AnimationLayer.ITEM, Channel.ACTION, hand, animation, speed);
-    }
-
-    public static long playPlayer(ServerPlayer player, InteractionHand hand, ResourceLocation animation, float speed) {
-        return start(player, AnimationLayer.PLAYER, Channel.ACTION, hand, animation, speed);
-    }
-
-    public static long setItemOverlay(ServerPlayer player, InteractionHand hand, ResourceLocation animation, float speed) {
-        return start(player, AnimationLayer.ITEM, Channel.OVERLAY, hand, animation, speed);
-    }
-
-    public static long setPlayerOverlay(ServerPlayer player, InteractionHand hand, ResourceLocation animation, float speed) {
-        return start(player, AnimationLayer.PLAYER, Channel.OVERLAY, hand, animation, speed);
-    }
-
-    public static void stopItem(ServerPlayer player, InteractionHand hand) {
-        stop(player, AnimationSlot.of(AnimationLayer.ITEM, Channel.ACTION, hand), null);
-    }
-
-    public static void stopItem(ServerPlayer player, InteractionHand hand, long startTick) {
-        stop(player, AnimationSlot.of(AnimationLayer.ITEM, Channel.ACTION, hand), startTick);
-    }
-
-    public static void stopPlayer(ServerPlayer player) {
-        stop(player, AnimationSlot.of(AnimationLayer.PLAYER, Channel.ACTION, InteractionHand.MAIN_HAND), null);
-    }
-
-    public static void stopPlayer(ServerPlayer player, long startTick) {
-        stop(player, AnimationSlot.of(AnimationLayer.PLAYER, Channel.ACTION, InteractionHand.MAIN_HAND), startTick);
-    }
-
-    public static void clearItemOverlay(ServerPlayer player, InteractionHand hand) {
-        stop(player, AnimationSlot.of(AnimationLayer.ITEM, Channel.OVERLAY, hand), null);
-    }
-
-    public static void clearPlayerOverlay(ServerPlayer player) {
-        stop(player, AnimationSlot.of(AnimationLayer.PLAYER, Channel.OVERLAY, InteractionHand.MAIN_HAND), null);
-    }
-
-    public static long playEntity(LivingEntity entity, ResourceLocation animation, float speed) {
-        return start(entity, AnimationLayer.ENTITY, Channel.ACTION, InteractionHand.MAIN_HAND, animation, speed);
-    }
-
-    public static void stopEntity(LivingEntity entity) {
-        stop(entity, AnimationSlot.of(AnimationLayer.ENTITY, Channel.ACTION, InteractionHand.MAIN_HAND), null);
-    }
-
-    public static void stopEntity(LivingEntity entity, long startTick) {
-        stop(entity, AnimationSlot.of(AnimationLayer.ENTITY, Channel.ACTION, InteractionHand.MAIN_HAND), startTick);
-    }
-
-    public static long setEntityOverlay(LivingEntity entity, ResourceLocation animation, float speed) {
-        entity.setData(JasperAttachments.ENTITY_OVERLAY, new EntityOverlayData(animation, speed));
-        return start(entity, AnimationLayer.ENTITY, Channel.OVERLAY, InteractionHand.MAIN_HAND, animation, speed);
-    }
-
-    public static void clearEntityOverlay(LivingEntity entity) {
-        entity.removeData(JasperAttachments.ENTITY_OVERLAY);
-        stop(entity, AnimationSlot.of(AnimationLayer.ENTITY, Channel.OVERLAY, InteractionHand.MAIN_HAND), null);
-    }
-
-    public static void stopAll(LivingEntity entity) {
-        AnimationData tracks = entity.removeData(JasperAttachments.ANIMATIONS);
-        if (tracks != null) {
-            tracks.playing().values().forEach(playing -> JasperNetwork.sendStop(entity, playing));
-        }
-    }
-
-    private static long start(LivingEntity entity, AnimationLayer layer, Channel channel, InteractionHand hand, ResourceLocation animation, float speed) {
+    public static long play(LivingEntity entity, Layer layer, AnimationTarget target, ResourceLocation animation, PlayOptions options) {
         long now = entity.level().getGameTime();
-        PlayingAnimation playing = new PlayingAnimation(layer, channel, hand, animation, now, speed, layer == AnimationLayer.ENTITY ? Items.AIR : entity.getItemInHand(hand).getItem());
-        entity.getData(JasperAttachments.ANIMATIONS).playing().put(playing.slot(), playing);
-        JasperNetwork.sendAnimation(entity, playing);
+        if (layer.policy().persistent()) {
+            entity.setData(JasperAttachments.SAVED_ANIMATIONS, entity.getData(JasperAttachments.SAVED_ANIMATIONS)
+                    .with(new SavedAnimation(target, layer.id(), animation, now, options)));
+        }
+        start(entity, new AnimationSlot(target, layer), animation, now, options);
         return now;
     }
 
-    private static void stop(LivingEntity entity, AnimationSlot slot, @Nullable Long startTick) {
+    public static void stop(LivingEntity entity, Layer layer, AnimationTarget target) {
+        stop(entity, layer, target, null);
+    }
+
+    // Only stops it if the animation that started at that tick is still the one playing
+    public static void stop(LivingEntity entity, Layer layer, AnimationTarget target, @Nullable Long startTick) {
+        AnimationSlot slot = new AnimationSlot(target, layer);
         AnimationData tracks = entity.getExistingDataOrNull(JasperAttachments.ANIMATIONS);
         PlayingAnimation playing = tracks == null ? null : tracks.playing().get(slot);
         if (playing == null || startTick != null && playing.startTick() != startTick) {
             return;
+        }
+        if (entity.hasData(JasperAttachments.SAVED_ANIMATIONS)) {
+            entity.setData(JasperAttachments.SAVED_ANIMATIONS, entity.getData(JasperAttachments.SAVED_ANIMATIONS).without(target, layer.id()));
         }
         tracks.playing().remove(slot);
         JasperNetwork.sendStop(entity, playing);
@@ -115,18 +61,64 @@ public final class JasperAnimations {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+    public static void stopAll(LivingEntity entity) {
+        entity.removeData(JasperAttachments.SAVED_ANIMATIONS);
+        AnimationData tracks = entity.removeData(JasperAttachments.ANIMATIONS);
+        if (tracks != null) {
+            tracks.playing().values().forEach(playing -> JasperNetwork.sendStop(entity, playing));
+        }
+    }
+
+    private static void start(LivingEntity entity, AnimationSlot slot, ResourceLocation animation, long startTick, PlayOptions options) {
+        Item item = slot.layer().policy().endsOn(EndCondition.ITEM_CHANGE) ? entity.getItemInHand(options.hand()).getItem() : Items.AIR;
+        PlayingAnimation playing = new PlayingAnimation(slot, animation, startTick, options, item);
+        entity.getData(JasperAttachments.ANIMATIONS).playing().put(slot, playing);
+        JasperNetwork.sendAnimation(entity, playing);
+    }
+
+    private static void end(LivingEntity entity, EndCondition condition) {
+        AnimationData tracks = entity.getExistingDataOrNull(JasperAttachments.ANIMATIONS);
+        if (tracks != null) {
+            for (PlayingAnimation playing : List.copyOf(tracks.playing().values())) {
+                if (playing.slot().layer().policy().endsOn(condition)) {
+                    stop(entity, playing.slot().layer(), playing.slot().target());
+                }
+            }
+        }
+    }
+
+    // Saved animations are sent again for a client that does not have them yet
+    private static void restore(LivingEntity entity) {
+        if (!entity.hasData(JasperAttachments.SAVED_ANIMATIONS)) {
             return;
         }
-        AnimationData tracks = player.getExistingDataOrNull(JasperAttachments.ANIMATIONS);
+        for (SavedAnimation saved : entity.getData(JasperAttachments.SAVED_ANIMATIONS).animations()) {
+            Layer layer = JasperLayers.get(saved.layer());
+            if (layer != null) {
+                start(entity, new AnimationSlot(saved.target(), layer), saved.animation(), saved.startTick(), saved.options());
+            }
+        }
+    }
+
+    private static void resend(LivingEntity entity) {
+        AnimationData tracks = entity.getExistingDataOrNull(JasperAttachments.ANIMATIONS);
+        if (tracks != null) {
+            tracks.playing().values().forEach(playing -> JasperNetwork.sendAnimation(entity, playing));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onEntityTick(EntityTickEvent.Post event) {
+        if (event.getEntity().level().isClientSide() || !(event.getEntity() instanceof LivingEntity entity)) {
+            return;
+        }
+        AnimationData tracks = entity.getExistingDataOrNull(JasperAttachments.ANIMATIONS);
         if (tracks == null) {
             return;
         }
         for (PlayingAnimation playing : List.copyOf(tracks.playing().values())) {
-            if (playing.layer() != AnimationLayer.ENTITY && player.getItemInHand(playing.hand()).getItem() != playing.item()) {
-                stop(player, playing.slot(), null);
+            if (playing.slot().layer().policy().endsOn(EndCondition.ITEM_CHANGE) && entity.getItemInHand(playing.options().hand()).getItem() != playing.item()) {
+                stop(entity, playing.slot().layer(), playing.slot().target());
             }
         }
     }
@@ -145,22 +137,38 @@ public final class JasperAnimations {
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         if (!event.getEntity().level().isClientSide()) {
-            stopAll(event.getEntity());
+            end(event.getEntity(), EndCondition.DEATH);
+        }
+    }
+
+    // Players come back through their own events below, once their client knows them
+    @SubscribeEvent
+    public static void onJoinLevel(EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity entity && !(entity instanceof ServerPlayer)) {
+            restore(entity);
         }
     }
 
     @SubscribeEvent
-    public static void onJoinLevel(EntityJoinLevelEvent event) {
-        if (!event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity entity && entity.hasData(JasperAttachments.ENTITY_OVERLAY)) {
-            EntityOverlayData overlay = entity.getData(JasperAttachments.ENTITY_OVERLAY);
-            start(entity, AnimationLayer.ENTITY, Channel.OVERLAY, InteractionHand.MAIN_HAND, overlay.animation(), overlay.speed());
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            restore(player);
         }
     }
 
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            restore(player);
+        }
+    }
+
+    // The client builds a new player, so whatever is still playing is sent again
     @SubscribeEvent
     public static void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            stopAll(player);
+            end(player, EndCondition.DIMENSION_CHANGE);
+            resend(player);
         }
     }
 }

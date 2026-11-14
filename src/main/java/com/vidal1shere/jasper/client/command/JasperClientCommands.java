@@ -26,9 +26,8 @@ public final class JasperClientCommands {
         ResourceManager manager = Minecraft.getInstance().getResourceManager();
         int items = JasperAnimationLoader.ITEM.reload(manager);
         int players = JasperAnimationLoader.PLAYER.reload(manager);
-        int armPoses = JasperAnimationLoader.ARM_POSE.reload(manager);
         int entities = JasperAnimationLoader.ENTITY.reload(manager);
-        context.getSource().sendSuccess(() -> Component.literal("Reloaded " + items + " item, " + players + " player, " + armPoses + " arm pose and " + entities + " entity animations; errors go to the log"), false);
-        return items + players + armPoses + entities;
+        context.getSource().sendSuccess(() -> Component.literal("Reloaded " + items + " item, " + players + " player and " + entities + " entity animations; errors go to the log"), false);
+        return items + players + entities;
     }
 }
