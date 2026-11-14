@@ -2,9 +2,10 @@ package com.vidal1shere.jasper.client.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
-import com.vidal1shere.jasper.client.animation.AnimationPlayback;
-import com.vidal1shere.jasper.client.animation.AnimationPose;
-import com.vidal1shere.jasper.client.animation.BonePose;
+import com.vidal1shere.jasper.client.animation.AnimationTrack;
+import com.vidal1shere.jasper.client.animation.JasperAnimation;
+import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
+import com.vidal1shere.jasper.client.animation.pose.BonePose;
 import com.vidal1shere.jasper.client.attachment.ItemAnimationData;
 import com.vidal1shere.jasper.client.molang.AnimationQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
@@ -20,11 +21,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 public final class ClientItemAnimations {
+    public static final String BONE = "item";
+
     private static final MolangContext CONTEXT = new MolangContext();
     private static final AnimationPose POSE = new AnimationPose();
     private static final Vector3f PIVOT = new Vector3f();
-    private static final ItemTransformAccumulator CURRENT = new ItemTransformAccumulator();
-    private static final ItemTransformAccumulator PREVIOUS = new ItemTransformAccumulator();
+    private static final ItemTransformAccumulator BLENDED = new ItemTransformAccumulator();
+    private static final ItemTransformAccumulator LAYER = new ItemTransformAccumulator();
     private static final List<Predicate<LivingEntity>> SUPPRESSORS = new CopyOnWriteArrayList<>();
 
     public static void suppressWhen(Predicate<LivingEntity> suppressor) {
@@ -32,40 +35,66 @@ public final class ClientItemAnimations {
     }
 
     public static void set(int entityId, InteractionHand hand, @Nullable ResourceLocation id, long startTick, float speed) {
+        set(entityId, hand, false, id, startTick, speed);
+    }
+
+    public static void set(int entityId, InteractionHand hand, boolean overlay, @Nullable ResourceLocation id, long startTick, float speed) {
         ItemAnimationData data = ClientAttachments.of(entityId, ClientAttachments.ITEM_ANIMATIONS);
         if (data != null) {
-            data.playback(hand).set(id, startTick, speed);
+            (overlay ? data.overlay(hand) : data.track(hand)).set(id, startTick, speed);
         }
     }
 
     public static boolean isActive(LivingEntity entity, InteractionHand hand, float partialTick) {
-        AnimationPlayback<ItemAnimation> playback = playback(entity, hand);
-        return playback != null && !isSuppressed(entity) && playback.isActive(entity.level().getGameTime() + partialTick);
+        ItemAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ITEM_ANIMATIONS);
+        if (data == null || isSuppressed(entity)) {
+            return false;
+        }
+        double now = entity.level().getGameTime() + partialTick;
+        return isActive(data.tracks().get(hand), now) || isActive(data.overlays().get(hand), now);
     }
 
     public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, MultiBufferSource buffer, float partialTick) {
-        AnimationPlayback<ItemAnimation> playback = playback(entity, hand);
-        if (playback == null || isSuppressed(entity)) {
+        ItemAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ITEM_ANIMATIONS);
+        if (data == null || isSuppressed(entity)) {
             return;
         }
         double now = entity.level().getGameTime() + partialTick;
-        AnimationQueries.fill(CONTEXT, entity, hand, partialTick);
-        boolean mirrored = AnimationQueries.isLeftArm(entity, hand);
-        ItemAnimation current = evaluate(playback, playback.current(), now, mirrored, CURRENT);
-        float weight = playback.weight(now);
-        if (weight >= 1.0F) {
-            if (current != null) {
-                CURRENT.applyTo(poseStack);
-                if (current.debug()) {
-                    ItemTransformAccumulator.debugRenderPivot(poseStack, buffer, current.pivot());
-                }
-            }
+        AnimationTrack track = data.tracks().get(hand);
+        AnimationTrack overlay = data.overlays().get(hand);
+        boolean main = isActive(track, now);
+        if (!main && !isActive(overlay, now)) {
             return;
         }
-        ItemAnimation previous = evaluate(playback, playback.previous(), now, mirrored, PREVIOUS);
-        if (current != null || previous != null) {
-            PREVIOUS.lerp(CURRENT, weight);
-            PREVIOUS.applyTo(poseStack);
+        AnimationQueries.fill(CONTEXT, entity, hand, partialTick);
+        boolean mirrored = AnimationQueries.isLeftArm(entity, hand);
+        if (main) {
+            apply(track, now, mirrored, poseStack, buffer);
+        }
+        if (isActive(overlay, now)) {
+            apply(overlay, now, mirrored, poseStack, buffer);
+        }
+    }
+
+    private static boolean isActive(@Nullable AnimationTrack track, double now) {
+        if (track == null) {
+            return false;
+        }
+        track.update(now);
+        return track.isActive();
+    }
+
+    private static void apply(AnimationTrack track, double now, boolean mirrored, PoseStack poseStack, MultiBufferSource buffer) {
+        JasperAnimation top = null;
+        for (int i = 0; i < track.size(); i++) {
+            top = evaluate(track, i, now, mirrored, i == 0 ? BLENDED : LAYER);
+            if (i > 0) {
+                BLENDED.lerp(LAYER, track.blend(i));
+            }
+        }
+        BLENDED.applyTo(poseStack);
+        if (top != null && top.debug() && track.blend(track.size() - 1) >= 1.0F) {
+            ItemTransformAccumulator.debugRenderPivot(poseStack, buffer, top.pivot());
         }
     }
 
@@ -79,17 +108,11 @@ public final class ClientItemAnimations {
     }
 
     @Nullable
-    private static AnimationPlayback<ItemAnimation> playback(LivingEntity entity, InteractionHand hand) {
-        ItemAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ITEM_ANIMATIONS);
-        return data == null ? null : data.playbacks().get(hand);
-    }
-
-    @Nullable
-    private static ItemAnimation evaluate(AnimationPlayback<ItemAnimation> playback, AnimationPlayback.Entry entry, double now, boolean mirrored, ItemTransformAccumulator accumulator) {
+    private static JasperAnimation evaluate(AnimationTrack track, int layer, double now, boolean mirrored, ItemTransformAccumulator accumulator) {
         accumulator.reset();
-        ItemAnimation animation = playback.evaluate(entry, now, CONTEXT, POSE);
+        JasperAnimation animation = track.evaluate(layer, now, CONTEXT, POSE);
         if (animation != null) {
-            BonePose pose = POSE.get(ItemAnimation.BONE);
+            BonePose pose = POSE.get(BONE);
             PIVOT.set(animation.pivot());
             if (mirrored) {
                 pose.mirror();

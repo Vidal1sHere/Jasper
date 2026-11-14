@@ -1,16 +1,17 @@
 package com.vidal1shere.jasper.client.attachment;
 
-import com.vidal1shere.jasper.client.animation.AnimationPlayback;
-import com.vidal1shere.jasper.client.loading.PlayerAnimationLoader;
-import com.vidal1shere.jasper.client.player.PlayerAnimation;
+import com.vidal1shere.jasper.client.animation.AnimationTrack;
+import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import net.minecraft.world.InteractionHand;
 
 public final class PlayerAnimationData {
-    private final AnimationPlayback<PlayerAnimation> playback = new AnimationPlayback<>(PlayerAnimationLoader.INSTANCE, PlayerAnimation::animation);
+    private final AnimationTrack track = new AnimationTrack(JasperAnimationLoader.PLAYER);
+    private final AnimationTrack overlay = new AnimationTrack(JasperAnimationLoader.PLAYER);
     private InteractionHand hand = InteractionHand.MAIN_HAND;
+    private InteractionHand overlayHand = InteractionHand.MAIN_HAND;
 
-    public AnimationPlayback<PlayerAnimation> playback() {
-        return playback;
+    public AnimationTrack track() {
+        return track;
     }
 
     public InteractionHand hand() {
@@ -19,5 +20,17 @@ public final class PlayerAnimationData {
 
     public void setHand(InteractionHand hand) {
         this.hand = hand;
+    }
+
+    public AnimationTrack overlay() {
+        return overlay;
+    }
+
+    public InteractionHand overlayHand() {
+        return overlayHand;
+    }
+
+    public void setOverlayHand(InteractionHand overlayHand) {
+        this.overlayHand = overlayHand;
     }
 }

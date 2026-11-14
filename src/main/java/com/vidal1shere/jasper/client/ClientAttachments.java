@@ -1,6 +1,7 @@
 package com.vidal1shere.jasper.client;
 
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.attachment.EntityAnimationData;
 import com.vidal1shere.jasper.client.attachment.ItemAnimationData;
 import com.vidal1shere.jasper.client.attachment.PlayerAnimationData;
 import net.minecraft.client.Minecraft;
@@ -19,6 +20,7 @@ public final class ClientAttachments {
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<ItemAnimationData>> ITEM_ANIMATIONS = TYPES.register("item_animations", () -> AttachmentType.builder(ItemAnimationData::new).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerAnimationData>> PLAYER_ANIMATIONS = TYPES.register("player_animations", () -> AttachmentType.builder(PlayerAnimationData::new).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<EntityAnimationData>> ENTITY_ANIMATIONS = TYPES.register("entity_animations", () -> AttachmentType.builder(EntityAnimationData::new).build());
 
     // The data of the entity a payload names, created when missing; null when this client does not know the entity
     @Nullable

@@ -5,15 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import com.vidal1shere.jasper.client.animation.AnimationKeyframe;
-import com.vidal1shere.jasper.client.animation.BoneAnimation;
-import com.vidal1shere.jasper.client.animation.Easing;
-import com.vidal1shere.jasper.client.animation.KeyframeAnimation;
+import com.vidal1shere.jasper.client.animation.keyframe.AnimationKeyframe;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneAnimation;
+import com.vidal1shere.jasper.client.animation.keyframe.Easing;
+import com.vidal1shere.jasper.client.animation.keyframe.KeyframeAnimation;
 import com.vidal1shere.jasper.client.molang.MolangParser;
 import com.vidal1shere.jasper.client.molang.MolangValue;
 import net.minecraft.util.GsonHelper;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public final class KeyframeJson {
         }
     }
 
-    public static KeyframeAnimation parse(JsonObject json, Set<String> bones, Units units, Set<String> extraFields) {
+    public static KeyframeAnimation parse(JsonObject json, @Nullable Set<String> bones, Units units, Set<String> extraFields) {
         for (String field : json.keySet()) {
             if (UNSUPPORTED.contains(field)) {
                 throw new JsonParseException(field + ": not supported yet");
@@ -57,7 +58,7 @@ public final class KeyframeJson {
         for (Map.Entry<String, JsonElement> bone : bonesJson.entrySet()) {
             String name = bone.getKey();
             String field = "bones." + name;
-            if (!bones.contains(name)) {
+            if (bones != null && !bones.contains(name)) {
                 throw new JsonParseException(field + ": unknown bone, expected one of " + bones);
             }
             JsonObject channels = GsonHelper.convertToJsonObject(bone.getValue(), field);

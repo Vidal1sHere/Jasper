@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.animation;
+package com.vidal1shere.jasper.client.animation.pose;
 
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;

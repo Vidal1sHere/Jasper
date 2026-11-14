@@ -1,5 +1,7 @@
-package com.vidal1shere.jasper.client.animation;
+package com.vidal1shere.jasper.client.animation.keyframe;
 
+import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
+import com.vidal1shere.jasper.client.animation.pose.BonePose;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.client.molang.MolangQuery;
 import net.minecraft.util.Mth;

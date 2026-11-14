@@ -2,8 +2,7 @@ package com.vidal1shere.jasper.client.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.vidal1shere.jasper.Jasper;
-import com.vidal1shere.jasper.client.loading.ItemAnimationLoader;
-import com.vidal1shere.jasper.client.loading.PlayerAnimationLoader;
+import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -25,10 +24,11 @@ public final class JasperClientCommands {
 
     private static int reload(CommandContext<CommandSourceStack> context) {
         ResourceManager manager = Minecraft.getInstance().getResourceManager();
-        int items = ItemAnimationLoader.INSTANCE.reload(manager);
-        int players = PlayerAnimationLoader.INSTANCE.reload(manager);
-        int armPoses = PlayerAnimationLoader.ARM_POSES.reload(manager);
-        context.getSource().sendSuccess(() -> Component.literal("Reloaded " + items + " item, " + players + " player and " + armPoses + " arm pose animations; errors go to the log"), false);
-        return items + players + armPoses;
+        int items = JasperAnimationLoader.ITEM.reload(manager);
+        int players = JasperAnimationLoader.PLAYER.reload(manager);
+        int armPoses = JasperAnimationLoader.ARM_POSE.reload(manager);
+        int entities = JasperAnimationLoader.ENTITY.reload(manager);
+        context.getSource().sendSuccess(() -> Component.literal("Reloaded " + items + " item, " + players + " player, " + armPoses + " arm pose and " + entities + " entity animations; errors go to the log"), false);
+        return items + players + armPoses + entities;
     }
 }

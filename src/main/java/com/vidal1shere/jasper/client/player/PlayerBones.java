@@ -20,6 +20,7 @@ public final class PlayerBones {
     public static final String LEFT_LEG = "left_leg";
 
     public static final Set<String> ALL = Set.of(ROOT, TORSO, HEAD, RIGHT_ARM, LEFT_ARM, RIGHT_ITEM, LEFT_ITEM, RIGHT_LEG, LEFT_LEG);
+    public static final Set<String> ARM_POSE = Set.of(TORSO, HEAD, RIGHT_ARM, LEFT_ARM, RIGHT_ITEM, LEFT_ITEM, RIGHT_LEG, LEFT_LEG);
 
     public static final String[][] PAIRS = {{RIGHT_ARM, LEFT_ARM}, {RIGHT_ITEM, LEFT_ITEM}, {RIGHT_LEG, LEFT_LEG}};
 
