@@ -11,7 +11,7 @@ import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.locator.Locator;
-import com.vidal1shere.jasper.client.effect.EffectTimeline;
+import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.player.PlayerBones;
 import net.minecraft.client.model.geom.PartPose;

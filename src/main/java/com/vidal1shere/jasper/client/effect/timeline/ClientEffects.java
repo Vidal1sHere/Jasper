@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.effect;
+package com.vidal1shere.jasper.client.effect.timeline;
 
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.ClientAttachments;
@@ -9,6 +9,9 @@ import com.vidal1shere.jasper.client.attachment.EffectData;
 import com.vidal1shere.jasper.client.attachment.LayerData;
 import com.vidal1shere.jasper.client.attachment.effect.BoundEffect;
 import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.effect.AnimationEffect;
+import com.vidal1shere.jasper.client.effect.EffectContext;
+import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.LayerKey;
 import net.minecraft.client.Minecraft;
@@ -116,7 +119,8 @@ public final class ClientEffects {
 
     private static void start(Entity entity, LayerKey key, AnimationTrack.Entry entry, EffectEntry effect, float at) {
         EffectContext context = new EffectContext(entity, key.target(), effect.locator(), effect.follow(), effect.persist(), !Float.isNaN(effect.until()));
-        PlayingEffect instance = effect.effect().start(context);
+        AnimationEffect resolved = effect.molang() == null ? effect.effect() : effect.molang().resolve(entity, key.target(), at);
+        PlayingEffect instance = resolved == null ? null : resolved.start(context);
         if (instance == null) {
             return;
         }

@@ -7,9 +7,9 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.ExtraCodecs;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -26,11 +26,11 @@ public record SoundEffect(ResourceLocation sound, float volume, float pitch, Opt
 
     public static final MapCodec<SoundEffect> CODEC = RecordCodecBuilder.<SoundEffect>mapCodec(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("sound").forGetter(SoundEffect::sound),
-            Codec.floatRange(0.0F, Float.MAX_VALUE).optionalFieldOf("volume", 1.0F).forGetter(SoundEffect::volume),
-            Codec.floatRange(0.0F, Float.MAX_VALUE).optionalFieldOf("pitch", 1.0F).forGetter(SoundEffect::pitch),
+            EffectCodecs.number(0.0F, Float.MAX_VALUE).optionalFieldOf("volume", 1.0F).forGetter(SoundEffect::volume),
+            EffectCodecs.number(0.0F, Float.MAX_VALUE).optionalFieldOf("pitch", 1.0F).forGetter(SoundEffect::pitch),
             SOURCE.optionalFieldOf("source").forGetter(SoundEffect::source),
             Codec.BOOL.optionalFieldOf("loop", false).forGetter(SoundEffect::loop),
-            ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("loops", 0).forGetter(SoundEffect::loops)
+            EffectCodecs.integer(0, Integer.MAX_VALUE).optionalFieldOf("loops", 0).forGetter(SoundEffect::loops)
     ).apply(instance, SoundEffect::new)).validate(effect -> effect.loops > 0 && !effect.loop
             ? DataResult.error(() -> "loops needs loop to be true")
             : DataResult.success(effect));

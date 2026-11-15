@@ -2,7 +2,7 @@ package com.vidal1shere.jasper.client.animation;
 
 import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.locator.Locator;
-import com.vidal1shere.jasper.client.effect.EffectTimeline;
+import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Vector3f;

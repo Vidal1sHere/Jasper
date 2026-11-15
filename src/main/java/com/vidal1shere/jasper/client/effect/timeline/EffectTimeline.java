@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.effect;
+package com.vidal1shere.jasper.client.effect.timeline;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

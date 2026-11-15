@@ -8,9 +8,11 @@ import com.mojang.serialization.MapCodec;
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.animation.locator.Locator;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
-import com.vidal1shere.jasper.client.effect.EffectEntry;
-import com.vidal1shere.jasper.client.effect.EffectTimeline;
 import com.vidal1shere.jasper.client.effect.JasperEffects;
+import com.vidal1shere.jasper.client.effect.EffectCodecs;
+import com.vidal1shere.jasper.client.effect.timeline.EffectEntry;
+import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
+import com.vidal1shere.jasper.client.effect.timeline.MolangEffect;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.neoforged.api.distmarker.Dist;
@@ -71,8 +73,10 @@ public final class EffectJson {
                 throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + allowed);
             }
         }
-        AnimationEffect effect = codec.decode(JsonOps.INSTANCE, JsonOps.INSTANCE.getMap(json).getOrThrow())
-                .getOrThrow(message -> new JsonParseException(field + ": " + message));
+        EffectCodecs.Collected<AnimationEffect> decoded = EffectCodecs.collect(() -> codec.decode(JsonOps.INSTANCE, JsonOps.INSTANCE.getMap(json).getOrThrow())
+                .getOrThrow(message -> new JsonParseException(field + ": " + message)));
+        AnimationEffect effect = decoded.value();
+        MolangEffect molang = decoded.expressions().isEmpty() ? null : new MolangEffect(codec, json.deepCopy(), decoded.expressions());
         String locator = json.has("locator") ? GsonHelper.getAsString(json, "locator") : null;
         if (locator != null) {
             locator(locator, field + ".locator", locators, bones);
@@ -85,7 +89,7 @@ public final class EffectJson {
                 throw new JsonParseException(field + ".bones: unknown bone '" + bone + "', expected one of " + bones);
             }
         }
-        return new EffectEntry(time, effect, locator, GsonHelper.getAsBoolean(json, "follow", false), until(json, field, time, length), GsonHelper.getAsBoolean(json, "persist", true));
+        return new EffectEntry(time, effect, molang, locator, GsonHelper.getAsBoolean(json, "follow", false), until(json, field, time, length), GsonHelper.getAsBoolean(json, "persist", true));
     }
 
     private static void locator(String name, String field, Map<String, Locator> locators, @Nullable Set<String> bones) {

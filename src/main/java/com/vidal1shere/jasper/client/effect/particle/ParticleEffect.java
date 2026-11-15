@@ -1,18 +1,17 @@
 package com.vidal1shere.jasper.client.effect.particle;
 
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -29,12 +28,12 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
 
     public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             ParticleTypes.CODEC.fieldOf("particle").forGetter(ParticleEffect::particle),
-            ExtraCodecs.POSITIVE_INT.optionalFieldOf("count", 1).forGetter(ParticleEffect::count),
-            Vec3.CODEC.optionalFieldOf("spread", Vec3.ZERO).forGetter(ParticleEffect::spread),
-            Codec.floatRange(0.0F, Float.MAX_VALUE).optionalFieldOf("speed", 0.0F).forGetter(ParticleEffect::speed),
-            Vec3.CODEC.optionalFieldOf("velocity", Vec3.ZERO).forGetter(ParticleEffect::velocity),
-            ExtraCodecs.POSITIVE_INT.optionalFieldOf("lifetime").forGetter(ParticleEffect::lifetime),
-            ExtraCodecs.POSITIVE_INT.optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval)
+            EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("count", 1).forGetter(ParticleEffect::count),
+            EffectCodecs.vector().optionalFieldOf("spread", Vec3.ZERO).forGetter(ParticleEffect::spread),
+            EffectCodecs.number(0.0F, Float.MAX_VALUE).optionalFieldOf("speed", 0.0F).forGetter(ParticleEffect::speed),
+            EffectCodecs.vector().optionalFieldOf("velocity", Vec3.ZERO).forGetter(ParticleEffect::velocity),
+            EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("lifetime").forGetter(ParticleEffect::lifetime),
+            EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval)
     ).apply(instance, ParticleEffect::new));
 
     // Particles that do not persist need an instance that removes them when it ends

@@ -7,10 +7,11 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.animation.keyframe.Easing;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
-import com.vidal1shere.jasper.client.effect.Blend;
 import com.vidal1shere.jasper.client.effect.EffectContext;
-import com.vidal1shere.jasper.client.effect.Light;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.effect.spec.Blend;
+import com.vidal1shere.jasper.client.effect.EffectCodecs;
+import com.vidal1shere.jasper.client.effect.spec.Light;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
@@ -29,8 +30,8 @@ import java.util.Optional;
 public record TrailEffect(List<String> locators, float lifetime, float interval, List<TextColor> color, Optional<List<TextColor>> endColor,
                           List<Float> alpha, List<Float> endAlpha, Easing easing, float shrink, Blend blend, Light light,
                           Optional<ResourceLocation> texture, float width, int smoothing, Space space) implements AnimationEffect {
-    private static final Codec<Float> UNIT = Codec.floatRange(0.0F, 1.0F);
-    private static final Codec<Float> POSITIVE = Codec.floatRange(0.001F, Float.MAX_VALUE);
+    private static final Codec<Float> UNIT = EffectCodecs.number(0.0F, 1.0F);
+    private static final Codec<Float> POSITIVE = EffectCodecs.number(0.001F, Float.MAX_VALUE);
 
     public static final MapCodec<TrailEffect> CODEC = RecordCodecBuilder.<TrailEffect>mapCodec(instance -> instance.group(
             Codec.STRING.listOf().fieldOf("locators").forGetter(TrailEffect::locators),
@@ -46,7 +47,7 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
             Light.CODEC.optionalFieldOf("light", Light.FULL).forGetter(TrailEffect::light),
             ResourceLocation.CODEC.optionalFieldOf("texture").forGetter(TrailEffect::texture),
             POSITIVE.optionalFieldOf("width", 0.25F).forGetter(TrailEffect::width),
-            Codec.intRange(0, 16).optionalFieldOf("smoothing", 3).forGetter(TrailEffect::smoothing),
+            EffectCodecs.integer(0, 16).optionalFieldOf("smoothing", 3).forGetter(TrailEffect::smoothing),
             Space.CODEC.optionalFieldOf("space", Space.WORLD).forGetter(TrailEffect::space)
     ).apply(instance, TrailEffect::new)).validate(effect -> effect.locators.isEmpty()
             ? DataResult.error(() -> "a trail needs at least one locator")

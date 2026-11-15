@@ -1,11 +1,11 @@
 package com.vidal1shere.jasper.client.effect.screen;
 
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 @OnlyIn(Dist.CLIENT)
 public record HitStopEffect(float duration) implements AnimationEffect {
     public static final MapCodec<HitStopEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Codec.floatRange(0.0F, Float.MAX_VALUE).optionalFieldOf("duration", 50.0F).forGetter(HitStopEffect::duration)
+            EffectCodecs.number(0.0F, Float.MAX_VALUE).optionalFieldOf("duration", 50.0F).forGetter(HitStopEffect::duration)
     ).apply(instance, HitStopEffect::new));
 
     @Override

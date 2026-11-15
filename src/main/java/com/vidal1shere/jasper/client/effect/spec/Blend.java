@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.effect;
+package com.vidal1shere.jasper.client.effect.spec;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
