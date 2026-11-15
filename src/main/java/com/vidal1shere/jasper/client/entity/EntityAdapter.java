@@ -8,16 +8,13 @@ import com.vidal1shere.jasper.client.animation.LayerFrames;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
-import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.entity.AnimatedEntity;
 import com.vidal1shere.jasper.layer.AnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
-import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,7 +23,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -63,34 +59,13 @@ public final class EntityAdapter {
         frameEntity = null;
     }
 
-    // Before the tracks update, so a play once that just ended hands over to the driver instead of fading to nothing
     private static <T extends LivingEntity & AnimatedEntity> void drive(T entity, ClientAnimationData data, double now) {
         for (Layer layer : JasperLayers.sorted()) {
             AnimationDriver driver = entity.driver(layer, AnimationTarget.MODEL);
-            if (driver == null) {
-                continue;
-            }
-            LayerState track = data.track(AnimationTarget.MODEL, layer, JasperAnimationLoader.ENTITY);
-            if (track.played() != null) {
-                if (alive(track.played(), track.playedStart(), track.playedOptions(), now)) {
-                    continue;
-                }
-                track.endPlay();
-            }
-            ResourceLocation pick = driver.pick(entity);
-            if (!Objects.equals(pick, track.driven())) {
-                track.track().set(pick, (long) now, 1.0F, false);
-                track.setDriven(pick);
+            if (driver != null) {
+                data.track(AnimationTarget.MODEL, layer, JasperAnimationLoader.ENTITY).drive(driver.pick(entity), now);
             }
         }
-    }
-
-    private static boolean alive(ResourceLocation id, long start, PlayOptions options, double now) {
-        JasperAnimation animation = JasperAnimationLoader.ENTITY.get(id);
-        if (animation == null) {
-            return false;
-        }
-        return options.loop() || animation.loop() != JasperAnimation.LoopType.PLAY_ONCE || now < start + animation.length() * 20.0 / options.speed();
     }
 
     // From the top layer down, each one hides by its replace weight the look of the layers below it

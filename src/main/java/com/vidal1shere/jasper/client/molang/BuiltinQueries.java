@@ -1,5 +1,6 @@
 package com.vidal1shere.jasper.client.molang;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
@@ -36,6 +37,7 @@ public final class BuiltinQueries {
         context.set(MolangQuery.LOOK_X_ROTATION, context.query(MolangQuery.HEAD_X_ROTATION));
         context.set(MolangQuery.LOOK_Y_ROTATION, context.query(MolangQuery.HEAD_Y_ROTATION));
         context.set(MolangQuery.HAND_SIDE, isLeftArm(entity, hand) ? -1.0F : 1.0F);
+        context.set(MolangQuery.IS_FIRST_PERSON, isFirstPerson(entity));
         for (QuerySource source : SOURCES) {
             source.fill(context, entity, hand, partialTick);
         }
@@ -52,6 +54,11 @@ public final class BuiltinQueries {
         float lookYaw = horizontal < 1.0E-4F ? 0.0F : (float) Mth.atan2(-LOOK.x, -LOOK.z) * Mth.RAD_TO_DEG * Math.min(1.0F, horizontal * 10.0F);
         context.set(MolangQuery.LOOK_X_ROTATION, (float) Math.asin(Mth.clamp(LOOK.y, -1.0F, 1.0F)) * Mth.RAD_TO_DEG);
         context.set(MolangQuery.LOOK_Y_ROTATION, lookYaw);
+    }
+
+    public static boolean isFirstPerson(LivingEntity entity) {
+        Minecraft minecraft = Minecraft.getInstance();
+        return entity == minecraft.getCameraEntity() && minecraft.options.getCameraType().isFirstPerson();
     }
 
     public static boolean isLeftArm(LivingEntity entity, InteractionHand hand) {

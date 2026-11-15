@@ -4,7 +4,11 @@ import com.vidal1shere.jasper.client.animation.keyframe.BoneSampler;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.client.molang.MolangContext;
+import com.vidal1shere.jasper.client.molang.MolangQuery;
+import com.vidal1shere.jasper.layer.PlayOptions;
+import com.vidal1shere.jasper.layer.PlayView;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +22,7 @@ public final class AnimationTrack {
     public static final int MAX_FADES = 8;
 
     // Each play is its own entry, so the same animation played again is a different one
-    public record Entry(@Nullable ResourceLocation id, long startTick, float speed, boolean loop) {
+    public record Entry(@Nullable ResourceLocation id, long startTick, float speed, boolean loop, @Nullable ResourceLocation firstPerson, PlayView view) {
         // Never wrapped, so the cycles of a loop can be counted
         public float elapsed(double now) {
             return (float) Math.max(0.0, (now - startTick) / 20.0 * speed);
@@ -47,12 +51,16 @@ public final class AnimationTrack {
 
     public AnimationTrack(JasperAnimationLoader loader) {
         this.loader = loader;
-        fades.add(new Fade(new Entry(null, 0L, 1.0F, false), 0.0, 0.0F));
+        fades.add(new Fade(new Entry(null, 0L, 1.0F, false, null, PlayView.ALL), 0.0, 0.0F));
     }
 
     public void set(@Nullable ResourceLocation id, long startTick, float speed, boolean loop) {
+        set(id, startTick, new PlayOptions(speed, InteractionHand.MAIN_HAND, loop));
+    }
+
+    public void set(@Nullable ResourceLocation id, long startTick, PlayOptions options) {
         JasperAnimation fading = id == null ? animation(fades.size() - 1) : loader.get(id);
-        push(new Entry(id, startTick, speed, loop), startTick, fading == null ? 0.0F : fading.blendTicks());
+        push(new Entry(id, startTick, options.speed(), options.loop(), options.firstPerson(), options.view()), startTick, fading == null ? 0.0F : fading.blendTicks());
     }
 
     // Ends a finished play once animation with an empty fade at its end, then drops the fades hidden by a fully faded one
@@ -62,7 +70,7 @@ public final class AnimationTrack {
         if (animation != null && animation.loop() == JasperAnimation.LoopType.PLAY_ONCE && !top.entry().loops(animation)) {
             double end = top.entry().startTick() + animation.length() * 20.0 / top.entry().speed();
             if (now >= end) {
-                push(new Entry(null, (long) end, 1.0F, false), end, animation.blendTicks());
+                push(new Entry(null, (long) end, 1.0F, false, null, PlayView.ALL), end, animation.blendTicks());
             }
         }
         int hidden = 0;
@@ -119,9 +127,25 @@ public final class AnimationTrack {
     }
 
     @Nullable
+    public JasperAnimation animation(int i, boolean firstPerson) {
+        Entry entry = fades.get(i).entry();
+        if (entry.view() == (firstPerson ? PlayView.THIRD_PERSON : PlayView.FIRST_PERSON)) {
+            return null;
+        }
+        if (firstPerson && entry.firstPerson() != null) {
+            JasperAnimation variant = loader.get(entry.firstPerson());
+            if (variant != null) {
+                return variant;
+            }
+        }
+        return animation(i);
+    }
+
+    // The view comes from the is_first_person query of the context
+    @Nullable
     public JasperAnimation evaluate(int i, double now, MolangContext context, AnimationPose pose) {
         pose.reset();
-        JasperAnimation animation = animation(i);
+        JasperAnimation animation = animation(i, context.query(MolangQuery.IS_FIRST_PERSON) > 0.5F);
         if (animation != null) {
             BoneSampler.evaluate(animation, fades.get(i).entry().seconds(now, animation), context, pose);
         }

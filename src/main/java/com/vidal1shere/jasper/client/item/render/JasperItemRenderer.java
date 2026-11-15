@@ -52,7 +52,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     @Nullable
     private static JasperItemRenderer instance;
-    // renderByItem gets no entity, so the hand renderers say who holds the stack they are drawing
+    // renderByItem gets no entity, so the hand renderers set it
     @Nullable
     private static LivingEntity holder;
     @Nullable
@@ -71,7 +71,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         return instance;
     }
 
-    // Last, so an item whose mod gives it client extensions of its own keeps them
+    // Last, so items with client extensions of their own keep them
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRegisterClientExtensions(RegisterClientExtensionsEvent event) {
         for (Item item : BuiltInRegistries.ITEM) {
@@ -81,7 +81,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         }
     }
 
-    // Not the renderer itself: it is made on the first render, once the block entity renderers exist
+    // Not the renderer: it is made on the first render, once the block entity renderers exist
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((ResourceManagerReloadListener) manager -> {
@@ -112,8 +112,8 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
             return;
         }
         model.parts().root().getAllParts().forEach(ModelPart::resetPose);
-        if (holder != null && holderHand != null && displayContext.firstPerson()) {
-            ItemAdapter.applyParts(holder, holderHand, model.parts(), Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
+        if (holder != null && holderHand != null) {
+            ItemAdapter.applyParts(holder, holderHand, model.parts(), displayContext.firstPerson(), Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
         }
         ResourceLocation texture = baked.texture();
         if (stack.getItem() instanceof AnimatedItem item) {
@@ -123,7 +123,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
             }
         }
         poseStack.pushPose();
-        // Undoes the vanilla centering and turns the model (Y down) the way GeckoLib draws a geo item, so the display transforms of a Blockbench GeckoLib item fit as they are
+        // Placed like GeckoLib draws a geo item, so Blockbench GeckoLib display transforms fit
         poseStack.translate(0.5F, 0.5F, 0.5F);
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         VertexConsumer consumer = ItemRenderer.getFoilBufferDirect(buffer, model.renderType(texture), false, stack.hasFoil());
@@ -131,7 +131,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         poseStack.popPose();
     }
 
-    // The baked model is not passed in, so it is asked again for this display context, through the overrides and separate_transforms like vanilla does
+    // renderByItem gets no baked model, so it is resolved again for this display context
     @Nullable
     private static JasperItemModel resolve(ItemStack stack, ItemDisplayContext displayContext) {
         Minecraft minecraft = Minecraft.getInstance();

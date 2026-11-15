@@ -1,13 +1,17 @@
 package com.vidal1shere.jasper.client.attachment;
 
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
+import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 public final class LayerState {
+    private final JasperAnimationLoader loader;
     private final AnimationTrack track;
     private InteractionHand hand = InteractionHand.MAIN_HAND;
     @Nullable
@@ -17,12 +21,42 @@ public final class LayerState {
     private long playedStart;
     private PlayOptions playedOptions = PlayOptions.DEFAULT;
     private boolean driverSeen;
+    // After a play ends or stops, the next pick goes in even unchanged
+    private boolean handOver;
     @Nullable
     private AnimationTrack.Entry firedEntry;
     private float firedTime;
 
     public LayerState(JasperAnimationLoader loader) {
+        this.loader = loader;
         this.track = new AnimationTrack(loader);
+    }
+
+    // Before the track updates, so a play once that just ended hands over to the driver instead of fading to nothing
+    public void drive(@Nullable ResourceLocation pick, double now) {
+        if (played != null) {
+            if (playAlive(now)) {
+                return;
+            }
+            endPlay();
+        }
+        if (handOver || !Objects.equals(pick, driven)) {
+            track.set(pick, (long) now, 1.0F, false);
+            setDriven(pick);
+            handOver = false;
+        }
+    }
+
+    public boolean driverSeen() {
+        return driverSeen;
+    }
+
+    private boolean playAlive(double now) {
+        JasperAnimation animation = loader.get(played);
+        if (animation == null) {
+            return false;
+        }
+        return playedOptions.loop() || animation.loop() != JasperAnimation.LoopType.PLAY_ONCE || now < playedStart + animation.length() * 20.0 / playedOptions.speed();
     }
 
     public AnimationTrack track() {
@@ -71,7 +105,7 @@ public final class LayerState {
         played = animation;
         playedStart = startTick;
         playedOptions = options;
-        track.set(animation, startTick, options.speed(), options.loop());
+        track.set(animation, startTick, options);
     }
 
     // The entry whose effects fired last and how far, in elapsed seconds
@@ -92,5 +126,6 @@ public final class LayerState {
     public void endPlay() {
         played = null;
         driven = null;
+        handOver = true;
     }
 }

@@ -22,7 +22,7 @@ import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 
 import java.util.function.Function;
 
-// "loader": "jasper:animated", with "model" a model layer ("<namespace>:<path>#<layer>", the layer main by default) and "texture" its texture file
+// "model" is "<namespace>:<path>#<layer>", the layer main by default
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
 public record AnimatedItemGeometry(ModelLayerLocation model, ResourceLocation texture) implements IUnbakedGeometry<AnimatedItemGeometry> {

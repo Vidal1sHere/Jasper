@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-// One frame per active layer of a target, from the lowest priority up; each adapter keeps its own, since their frames live until different render stages
+// Each adapter keeps its own, since their frames live until different render stages
 @OnlyIn(Dist.CLIENT)
 public final class LayerFrames {
     private static final Set<String> BONES = new HashSet<>();
@@ -36,13 +36,13 @@ public final class LayerFrames {
     private final QuerySource queries;
     private int size;
 
-    // Without mirror pairs the poses never mirror; with them, a layer whose hand is on the left arm mirrors its poses and swaps those pairs
+    // Null mirror pairs never mirror
     public LayerFrames(@Nullable String[][] mirrorPairs, @Nullable QuerySource queries) {
         this.mirrorPairs = mirrorPairs;
         this.queries = queries;
     }
 
-    // A null hand evaluates each layer with the hand it was played with
+    // A null hand uses the hand each layer was played with
     public int evaluate(LivingEntity entity, AnimationTarget target, @Nullable InteractionHand hand, float partialTick) {
         size = 0;
         layers.clear();
@@ -87,7 +87,7 @@ public final class LayerFrames {
         return frames.get(index);
     }
 
-    // The pooled list, valid up to size()
+    // Valid up to size()
     public List<TrackFrame> frames() {
         return frames;
     }
@@ -96,7 +96,7 @@ public final class LayerFrames {
         return layers.contains(layer);
     }
 
-    // Every part the frames animate, found by name, except locators and the ignored bones, which are not parts
+    // Locators and the ignored bones are not parts
     public void apply(Function<String, ModelPart> parts, Set<String> ignored) {
         for (int f = 0; f < size; f++) {
             TrackFrame frame = frames.get(f);

@@ -25,6 +25,7 @@ public final class MolangQuery {
     public static final MolangQuery HAND_SIDE = register("hand_side");
     public static final MolangQuery LOOK_X_ROTATION = register("look_x_rotation");
     public static final MolangQuery LOOK_Y_ROTATION = register("look_y_rotation");
+    public static final MolangQuery IS_FIRST_PERSON = register("is_first_person");
 
     private final String id;
     private final int index;

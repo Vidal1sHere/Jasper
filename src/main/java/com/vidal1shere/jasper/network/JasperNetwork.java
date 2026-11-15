@@ -16,7 +16,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.util.Optional;
 
 public final class JasperNetwork {
-    private static final String VERSION = "4";
+    private static final String VERSION = "5";
 
     // Optional, so a client with Jasper still joins a server without it
     public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {

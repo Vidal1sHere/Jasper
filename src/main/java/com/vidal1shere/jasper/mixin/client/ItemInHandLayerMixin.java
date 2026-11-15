@@ -1,8 +1,10 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.item.render.JasperItemRenderer;
 import com.vidal1shere.jasper.client.player.PlayerAdapter;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.world.InteractionHand;
@@ -19,7 +21,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ItemInHandLayerMixin {
     @Inject(method = "renderArmWithItem", at = @At("HEAD"))
     private void jasper$setItemHolder(LivingEntity livingEntity, ItemStack itemStack, ItemDisplayContext displayContext, HumanoidArm arm, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
-        JasperItemRenderer.setHolder(livingEntity, arm == livingEntity.getMainArm() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
+        InteractionHand hand = arm == livingEntity.getMainArm() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+        JasperItemRenderer.setHolder(livingEntity, hand);
+        ItemAdapter.drive(livingEntity, hand, itemStack, displayContext, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
     }
 
     @Inject(method = "renderArmWithItem", at = @At("RETURN"))

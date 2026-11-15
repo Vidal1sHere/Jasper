@@ -9,7 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-// No quads: being a custom renderer model, vanilla hands the stack to JasperItemRenderer
 @OnlyIn(Dist.CLIENT)
 public class JasperItemModel extends BuiltInModel {
     private final ModelLayerLocation model;

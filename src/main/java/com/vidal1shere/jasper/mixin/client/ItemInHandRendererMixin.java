@@ -4,11 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.effect.trail.Trails;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.item.render.JasperItemRenderer;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,6 +22,7 @@ public abstract class ItemInHandRendererMixin {
     @Inject(method = "renderArmWithItem", at = @At("HEAD"))
     private void jasper$setItemHolder(AbstractClientPlayer player, float partialTicks, float pitch, InteractionHand hand, float swingProgress, ItemStack stack, float equippedProgress, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, CallbackInfo ci) {
         JasperItemRenderer.setHolder(player, hand);
+        ItemAdapter.drive(player, hand, stack, BuiltinQueries.isLeftArm(player, hand) ? ItemDisplayContext.FIRST_PERSON_LEFT_HAND : ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, partialTicks);
     }
 
     @Inject(method = "renderArmWithItem", at = @At("RETURN"))

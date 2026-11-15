@@ -11,10 +11,12 @@ import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.LayerKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -88,6 +90,7 @@ public final class ClientEffects {
         AnimationTrack.Entry entry = track.entry(track.size() - 1);
         float elapsed = entry.elapsed(now);
         boolean visible = visible(entity, key.target());
+        boolean firstPerson = entity instanceof LivingEntity living && BuiltinQueries.isFirstPerson(living);
         float from;
         if (entry == layer.firedEntry()) {
             from = layer.firedTime();
@@ -96,12 +99,12 @@ public final class ClientEffects {
             AnimationTrack.Entry previous = layer.firedEntry();
             int index = previous == null ? -1 : track.indexOf(previous);
             if (index >= 0) {
-                fire(entity, key, previous, track.animation(index), layer.firedTime(), previous.elapsed(Math.min(now, entry.startTick())), visible);
+                fire(entity, key, previous, track.animation(index, firstPerson), layer.firedTime(), previous.elapsed(Math.min(now, entry.startTick())), visible);
             }
             from = now - entry.startTick() <= LATE_TICKS ? BEFORE_START : elapsed;
         }
         layer.fired(entry, elapsed);
-        fire(entity, key, entry, track.animation(track.size() - 1), from, elapsed, visible);
+        fire(entity, key, entry, track.animation(track.size() - 1, firstPerson), from, elapsed, visible);
     }
 
     private static void fire(Entity entity, LayerKey key, AnimationTrack.Entry entry, @Nullable JasperAnimation animation, float from, float to, boolean visible) {

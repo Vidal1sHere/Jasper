@@ -12,7 +12,6 @@ import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.locator.Locator;
 import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
-import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.player.PlayerBones;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.resources.ResourceLocation;
@@ -51,7 +50,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private static final Set<String> LOOK_FIELDS = Set.of("pitch", "yaw");
     private static final Set<String> LOCATOR_FIELDS = Set.of("parent", "position");
 
-    // Any bone: the item bone and the parts of a 3D item model
     public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", null, MODEL_UNITS, Set.of("pivot"));
     public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, MODEL_UNITS, POSE_FIELDS);
     public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, MODEL_UNITS, POSE_FIELDS);

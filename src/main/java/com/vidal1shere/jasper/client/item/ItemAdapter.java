@@ -9,12 +9,18 @@ import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.animation.pose.PartLookup;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.LayerState;
+import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
+import com.vidal1shere.jasper.client.molang.MolangQuery;
+import com.vidal1shere.jasper.item.AnimatedItem;
+import com.vidal1shere.jasper.item.ItemAnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -34,29 +40,25 @@ public final class ItemAdapter {
     private static final ItemTransform BLENDED = new ItemTransform();
     private static final ItemTransform LAYER = new ItemTransform();
     private static final List<Predicate<LivingEntity>> SUPPRESSORS = new CopyOnWriteArrayList<>();
+    // From the display context, since the camera is wrong for the player drawn in the inventory screen
+    private static boolean firstPerson;
     // The item has no counterpart bone, so a mirrored frame only flips the poses
-    private static final LayerFrames FRAMES = new LayerFrames(new String[0][], null);
+    private static final LayerFrames FRAMES = new LayerFrames(new String[0][], (context, entity, hand, partialTick) -> context.set(MolangQuery.IS_FIRST_PERSON, firstPerson));
 
     public static void suppressWhen(Predicate<LivingEntity> suppressor) {
         SUPPRESSORS.add(suppressor);
     }
 
-    public static boolean isActive(LivingEntity entity, InteractionHand hand, float partialTick) {
+    public static boolean isActive(LivingEntity entity, InteractionHand hand, Layer layer, float partialTick) {
         ClientAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
         if (data == null || isSuppressed(entity)) {
             return false;
         }
-        double now = entity.level().getGameTime() + partialTick;
-        for (Layer layer : JasperLayers.sorted()) {
-            if (isActive(data.existing(target(hand), layer), now)) {
-                return true;
-            }
-        }
-        return false;
+        return isActive(data.existing(target(hand), layer), entity.level().getGameTime() + partialTick);
     }
 
     public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, MultiBufferSource buffer, float partialTick) {
-        if (evaluate(entity, hand, partialTick) == 0) {
+        if (evaluate(entity, hand, true, partialTick) == 0) {
             return;
         }
         boolean locators = false;
@@ -71,15 +73,39 @@ public final class ItemAdapter {
         }
     }
 
-    // The parts of a 3D item, from the same hand track as the item bone
-    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, float partialTick) {
-        if (evaluate(entity, hand, partialTick) > 0) {
+    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, boolean firstPersonView, float partialTick) {
+        if (evaluate(entity, hand, firstPersonView, partialTick) > 0) {
             FRAMES.apply(parts::part, NOT_PARTS);
         }
     }
 
-    private static int evaluate(LivingEntity entity, InteractionHand hand, float partialTick) {
-        return isSuppressed(entity) ? 0 : FRAMES.evaluate(entity, target(hand), hand, partialTick);
+    // A layer driven for an item the hand no longer holds is driven to nothing
+    public static void drive(LivingEntity entity, InteractionHand hand, ItemStack stack, ItemDisplayContext displayContext, float partialTick) {
+        AnimatedItem item = stack.getItem() instanceof AnimatedItem animated ? animated : null;
+        ClientAnimationData data = item == null ? entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS) : entity.getData(ClientAttachments.ANIMATIONS);
+        if (data == null) {
+            return;
+        }
+        double now = entity.level().getGameTime() + partialTick;
+        for (Layer layer : JasperLayers.sorted()) {
+            ItemAnimationDriver driver = item == null ? null : item.driver(layer);
+            if (driver != null) {
+                data.track(target(hand), layer, JasperAnimationLoader.ITEM).drive(driver.pick(stack, entity, hand, displayContext), now);
+                continue;
+            }
+            LayerState track = data.existing(target(hand), layer);
+            if (track != null && track.driverSeen()) {
+                track.drive(null, now);
+            }
+        }
+    }
+
+    private static int evaluate(LivingEntity entity, InteractionHand hand, boolean firstPersonView, float partialTick) {
+        if (firstPersonView && isSuppressed(entity)) {
+            return 0;
+        }
+        firstPerson = firstPersonView;
+        return FRAMES.evaluate(entity, target(hand), hand, partialTick);
     }
 
     private static boolean hasLocators(TrackFrame frame) {
@@ -93,7 +119,7 @@ public final class ItemAdapter {
     }
 
     public static AnimationTarget target(InteractionHand hand) {
-        return hand == InteractionHand.MAIN_HAND ? AnimationTarget.MAIN_HAND : AnimationTarget.OFF_HAND;
+        return AnimationTarget.of(hand);
     }
 
     private static boolean isActive(@Nullable LayerState track, double now) {
@@ -104,7 +130,6 @@ public final class ItemAdapter {
         return track.track().isActive();
     }
 
-    // Whole transforms, blended with a slerp and the pivot baked in, which the per channel lerp of the parts cannot do
     private static void apply(TrackFrame frame, PoseStack poseStack, MultiBufferSource buffer) {
         JasperAnimation top = null;
         for (int i = 0; i < frame.size(); i++) {
