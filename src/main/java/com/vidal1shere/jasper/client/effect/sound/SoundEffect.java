@@ -16,7 +16,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import java.util.Arrays;
 import java.util.Optional;
 
-// Loops is how many times a looping sound plays, 0 for until it is stopped; without a source it uses the one of the entity
 @OnlyIn(Dist.CLIENT)
 public record SoundEffect(ResourceLocation sound, float volume, float pitch, Optional<SoundSource> source, boolean loop, int loops) implements AnimationEffect {
     private static final Codec<SoundSource> SOURCE = Codec.STRING.comapFlatMap(

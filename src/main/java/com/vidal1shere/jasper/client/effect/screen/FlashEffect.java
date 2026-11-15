@@ -15,7 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
-// A full screen tint for the local player only; times are milliseconds on the real clock, so it keeps fading while a hit stop freezes the game; duration is the hold when the entry has no until
+// Milliseconds on the real clock, so it keeps fading while a hit stop freezes the game
 @OnlyIn(Dist.CLIENT)
 public record FlashEffect(TextColor color, float opacity, float duration, Fade fadeIn, Fade fadeOut) implements AnimationEffect {
     public static final MapCodec<FlashEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(

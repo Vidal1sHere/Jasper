@@ -33,7 +33,6 @@ public final class ClientEffects {
     // Below 0, so the keyframes at 0 of a new play fire
     private static final float BEFORE_START = -1.0F;
 
-    // Effects that outlived their animation or their entity, until they end by themselves
     private static final List<BoundEffect> DETACHED = new ArrayList<>();
 
     @SubscribeEvent
@@ -145,7 +144,6 @@ public final class ClientEffects {
         });
     }
 
-    // Visual effects fire where their target is seen: the hands in first person, the model everywhere else
     private static boolean visible(Entity entity, AnimationTarget target) {
         Minecraft minecraft = Minecraft.getInstance();
         boolean firstPerson = entity == minecraft.player && entity == minecraft.getCameraEntity() && minecraft.options.getCameraType().isFirstPerson();

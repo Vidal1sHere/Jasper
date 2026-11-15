@@ -13,10 +13,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-// Records while its animation plays; ended, it stops recording and its rings fade out, unless it does not persist
 @OnlyIn(Dist.CLIENT)
 final class PlayingTrail implements PlayingEffect {
-    // Bounds a trail whose lifetime is long against its interval
     private static final int MAX_RINGS = 1024;
 
     final TrailEffect effect;
@@ -54,7 +52,7 @@ final class PlayingTrail implements PlayingEffect {
         return false;
     }
 
-    // Only when every locator of the section was captured in this frame, so a ring never mixes positions of two frames
+    // A ring never mixes positions of two frames
     void record(long frame, double now, float partialTick) {
         if (!recording || now - lastRing < effect.interval()) {
             return;
@@ -79,7 +77,7 @@ final class PlayingTrail implements PlayingEffect {
         }
     }
 
-    // What the ring points are relative to; a removed entity leaves its rings where it was
+    // A removed entity leaves its rings where it was
     Vec3 origin(float partialTick) {
         if (effect.space() == TrailEffect.Space.WORLD) {
             return Vec3.ZERO;

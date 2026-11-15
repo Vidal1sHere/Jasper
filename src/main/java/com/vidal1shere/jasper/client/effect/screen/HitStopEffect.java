@@ -11,7 +11,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
-// Duration is milliseconds on the real clock; until and persist do not apply, since a frozen client never reaches an until
+// Until and persist do not apply: a frozen client never reaches an until
 @OnlyIn(Dist.CLIENT)
 public record HitStopEffect(float duration) implements AnimationEffect {
     public static final MapCodec<HitStopEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(

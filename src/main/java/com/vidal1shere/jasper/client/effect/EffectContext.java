@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 
 @OnlyIn(Dist.CLIENT)
 public final class EffectContext {
-    // A locator not rendered for longer than this does not say where an effect is
     private static final long FRESH_TICKS = 2L;
 
     private final Entity entity;
@@ -55,7 +54,7 @@ public final class EffectContext {
         return bound;
     }
 
-    // Sampled when the effect started; a following one moves with its locator, or with the entity while the locator is not rendered (first person, off screen), and stays where it was once the entity left
+    // A following effect falls back to the entity while its locator is not rendered (first person, off screen)
     public Vec3 position() {
         if (follow && !entity.isRemoved()) {
             Vec3 located = located();

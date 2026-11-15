@@ -10,7 +10,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.Optional;
 
-// How an effect comes in or goes away, in the time unit of that effect: a length alone, or {"duration", "easing", "argument"}
+// In the time unit of the effect that uses it
 @OnlyIn(Dist.CLIENT)
 public record Fade(float duration, Easing easing, float argument) {
     public static final Fade NONE = new Fade(0.0F, Easing.LINEAR, 0.0F);
@@ -31,7 +31,6 @@ public record Fade(float duration, Easing easing, float argument) {
         return new Fade(duration, Easing.LINEAR, 0.0F);
     }
 
-    // From 0 to 1 over the fade, eased; a fade with no length is done at once
     public float progress(double elapsed) {
         if (duration <= 0.0F) {
             return 1.0F;

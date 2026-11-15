@@ -5,7 +5,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
 
-// Entries sorted by time
 @OnlyIn(Dist.CLIENT)
 public record EffectTimeline(List<EffectEntry> entries) {
     public static final EffectTimeline EMPTY = new EffectTimeline(List.of());
@@ -14,7 +13,7 @@ public record EffectTimeline(List<EffectEntry> entries) {
         return entries.isEmpty();
     }
 
-    // Every entry whose time falls after from and up to to, in elapsed seconds, with the elapsed time it fell on; a cycling animation fires it once per cycle
+    // A cycling animation fires each entry once per cycle
     public void fire(float from, float to, float length, boolean cycles, Fired fired) {
         if (to <= from) {
             return;

@@ -41,7 +41,6 @@ public final class LocatorCapture {
     private static boolean inLevel;
     private static long renderFrame;
 
-    // Counts the world renders, so a reader can tell the locators captured in this one
     public static long renderFrame() {
         return renderFrame;
     }

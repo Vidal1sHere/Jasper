@@ -30,10 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-/*
- * Rings are recorded where this frame's locators are known and drawn in camera relative world space: model trails after the entities and the particles,
- * hand trails at the end of the hand pass, with its projection and its depth, so they line up with the item
- */
+// Hand trails record and draw at the end of the hand pass, where their locators of this frame and the hand projection exist
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
 public final class Trails {
@@ -116,7 +113,6 @@ public final class Trails {
         }
     }
 
-    // Quads between two consecutive samples, joining point i to point i + 1 of the section
     private static void mesh(PlayingTrail trail, VertexConsumer consumer, boolean textured, ClientLevel level, Vec3 camera, double now, float partialTick) {
         TrailEffect effect = trail.effect;
         List<Sample> samples = samples(trail, trail.origin(partialTick), now);
@@ -135,7 +131,6 @@ public final class Trails {
         }
     }
 
-    // The rings in world space, with smoothing points between each two on a Catmull-Rom curve through the rings around them
     private static List<Sample> samples(PlayingTrail trail, Vec3 origin, double now) {
         List<PlayingTrail.Ring> rings = new ArrayList<>(trail.rings);
         int smoothing = trail.effect.smoothing();
@@ -167,7 +162,6 @@ public final class Trails {
         return samples;
     }
 
-    // A one point trail becomes a section of two points across its path, facing the camera
     private static List<Sample> widen(List<Sample> samples, Vec3 camera, float half) {
         List<Sample> wide = new ArrayList<>(samples.size());
         Vec3 side = new Vec3(0.0, 1.0, 0.0);
@@ -204,7 +198,6 @@ public final class Trails {
         return world;
     }
 
-    // U goes along the length with the age, V across the section
     private static void vertex(VertexConsumer consumer, boolean textured, ClientLevel level, Vec3 camera, TrailEffect effect, Sample sample, int index) {
         Vec3 point = sample.points()[index];
         float shrink = effect.shrinking(sample.age());

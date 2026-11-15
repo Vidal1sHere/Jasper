@@ -18,7 +18,6 @@ public final class HitStops {
     static void start(float duration) {
         long length = Math.round(duration * JasperClientConfig.HIT_STOP_SCALE.get());
         if (length > 0L) {
-            // Overlapping hit stops do not add up: a new one only extends the current one
             frozenUntil = Math.max(frozenUntil, Util.getMillis() + length);
         }
     }

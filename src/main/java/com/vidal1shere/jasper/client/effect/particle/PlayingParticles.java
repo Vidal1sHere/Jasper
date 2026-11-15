@@ -10,7 +10,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-// An emitter while it follows; without persist it also removes what it spawned when it ends
 @OnlyIn(Dist.CLIENT)
 final class PlayingParticles implements PlayingEffect {
     private final ParticleEffect effect;

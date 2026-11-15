@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-// Each particle lands at a gaussian offset of spread and moves at velocity plus a gaussian speed, like the server sendParticles; interval is the ticks between bursts while it follows
 @OnlyIn(Dist.CLIENT)
 public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, float speed, Vec3 velocity, Optional<Integer> lifetime, int interval) implements AnimationEffect {
     // Vanilla does not spawn particles farther than this from the camera
@@ -38,7 +37,7 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
             ExtraCodecs.POSITIVE_INT.optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval)
     ).apply(instance, ParticleEffect::new));
 
-    // Only an emitter or particles that do not persist need to keep running
+    // Particles that do not persist need an instance that removes them when it ends
     @Override
     @Nullable
     public PlayingEffect start(EffectContext context) {
@@ -46,7 +45,7 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
         return context.follow() || !context.persist() ? playing : null;
     }
 
-    // Through the particle engine, which returns the particles so they can be removed, with the checks vanilla adds on top of it: the particles option and the distance to the camera
+    // The particle engine returns the particles so they can be removed, but skips the checks of addParticle: the particles option and the camera distance
     void spawn(Vec3 at, @Nullable List<Particle> spawned) {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;

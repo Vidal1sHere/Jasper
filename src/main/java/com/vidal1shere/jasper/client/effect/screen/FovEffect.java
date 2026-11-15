@@ -13,7 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
-// Amount changes the FOV multiplier, -0.15 being a fully drawn bow; times are game ticks, since vanilla computes the FOV once per tick and smooths it between them
+// Game ticks, since vanilla computes the FOV once per tick and smooths it between them
 @OnlyIn(Dist.CLIENT)
 public record FovEffect(float amount, float duration, Fade fadeIn, Fade fadeOut) implements AnimationEffect {
     public static final MapCodec<FovEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(

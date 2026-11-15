@@ -22,7 +22,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import java.util.List;
 import java.util.Optional;
 
-// The locators are the ordered section of one ribbon, or with one locator the path of a camera facing ribbon of width blocks; lifetime and interval are game ticks; colors and alphas take one value or one per locator, the last repeating, and go from their start to their end over the life of a ring
+// Lifetime and interval are game ticks
 @OnlyIn(Dist.CLIENT)
 public record TrailEffect(List<String> locators, float lifetime, float interval, List<TextColor> color, Optional<List<TextColor>> endColor,
                           List<Float> alpha, List<Float> endAlpha, Easing easing, float shrink, Blend blend, Light light,
@@ -55,7 +55,7 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
         return Trails.start(this, context);
     }
 
-    // Age is 0 when a ring is born and 1 when it dies; index is its point in the section
+    // Age is 0 when a ring is born and 1 when it dies
     int argb(float age, int index) {
         float t = easing.apply(Mth.clamp(age, 0.0F, 1.0F), easing.defaultArgument());
         int start = at(color, index).getValue();
@@ -116,7 +116,7 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
         }
     }
 
-    // Entity rings move with the entity position, not its rotation
+    // Entity rings follow the entity position, not its rotation
     public enum Space implements StringRepresentable {
         WORLD("world"),
         ENTITY("entity");

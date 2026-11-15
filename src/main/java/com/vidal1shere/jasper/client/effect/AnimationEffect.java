@@ -6,18 +6,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-// One effect type of the animation timelines, registered in JasperEffects; null when the effect is over as soon as it starts
+// Start returns null when the effect is over as soon as it starts
 @OnlyIn(Dist.CLIENT)
 public interface AnimationEffect {
     @Nullable
     PlayingEffect start(EffectContext context);
 
-    // A visual effect only fires where its target is seen; the others, like sounds, fire from any target in any view, so they belong in one animation only
+    // Non visual effects, like sounds, fire from any target in any view, so they belong in one animation only
     default boolean visual() {
         return true;
     }
 
-    // Locators it reads besides the locator of its entry, checked when the animation loads like that one
     default List<String> locators() {
         return List.of();
     }

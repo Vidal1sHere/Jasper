@@ -9,7 +9,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-// World positions of the locators, written when the entity renders
 public final class LocatorData {
     private final Map<AnimationTarget, Map<String, CapturedLocator>> captured = new EnumMap<>(AnimationTarget.class);
 
@@ -25,7 +24,6 @@ public final class LocatorData {
         return found == null || found.tick() < since ? null : found.position();
     }
 
-    // Null unless it was captured in that render frame
     @Nullable
     public Vec3 inFrame(AnimationTarget target, String locator, long frame) {
         Map<String, CapturedLocator> locators = captured.get(target);
