@@ -1,9 +1,12 @@
-package com.vidal1shere.jasper.client.item;
+package com.vidal1shere.jasper.client.item.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.logging.LogUtils;
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.item.ItemAdapter;
+import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
+import com.vidal1shere.jasper.client.item.model.JasperItemModel;
 import com.vidal1shere.jasper.item.AnimatedItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayerLocation;

@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.item;
+package com.vidal1shere.jasper.client.item.model;
 
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.block.model.ItemOverrides;

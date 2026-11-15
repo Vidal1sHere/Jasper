@@ -2,7 +2,7 @@ package com.vidal1shere.jasper.client.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.vidal1shere.jasper.client.model.ModelParts;
+import com.vidal1shere.jasper.client.animation.pose.PartLookup;
 import com.vidal1shere.jasper.entity.AnimatedEntity;
 import net.minecraft.client.model.HierarchicalModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -18,10 +18,10 @@ import java.util.List;
 // Subclasses call super.setupAnim first and add their own logic after it
 @OnlyIn(Dist.CLIENT)
 public abstract class AnimatedModel<T extends LivingEntity & AnimatedEntity> extends HierarchicalModel<T> {
-    private final ModelParts parts;
+    private final PartLookup parts;
 
     protected AnimatedModel(ModelPart root) {
-        this.parts = new ModelParts(root, getClass().getSimpleName());
+        this.parts = new PartLookup(root, getClass().getSimpleName());
     }
 
     @Override
@@ -31,7 +31,7 @@ public abstract class AnimatedModel<T extends LivingEntity & AnimatedEntity> ext
 
     public abstract ModelPart head();
 
-    public ModelParts parts() {
+    public PartLookup parts() {
         return parts;
     }
 

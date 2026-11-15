@@ -4,13 +4,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
+import com.vidal1shere.jasper.client.animation.LayerFrames;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
-import com.vidal1shere.jasper.client.molang.BuiltinQueries;
-import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.entity.AnimatedEntity;
 import com.vidal1shere.jasper.layer.AnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
@@ -27,16 +26,13 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
 @OnlyIn(Dist.CLIENT)
 public final class EntityAdapter {
-    private static final MolangContext CONTEXT = new MolangContext();
-    private static final List<TrackFrame> FRAMES = new ArrayList<>();
+    private static final LayerFrames FRAMES = new LayerFrames(null, null);
     // Model parts and their locators are in pixels
     private static final float MODEL_UNIT = 1.0F / 16.0F;
 
@@ -45,35 +41,17 @@ public final class EntityAdapter {
     private static LivingEntity frameEntity;
     @Nullable
     private static AnimatedModel<?> frameModel;
-    private static int frameCount;
 
     public static <T extends LivingEntity & AnimatedEntity> void apply(T entity, AnimatedModel<T> model, float ageInTicks, float netHeadYaw, float headPitch) {
         ClientAnimationData data = entity.getData(ClientAttachments.ANIMATIONS);
         float partialTick = ageInTicks - entity.tickCount;
         double now = entity.level().getGameTime() + partialTick;
         drive(entity, data, now);
-        BuiltinQueries.fill(CONTEXT, entity, InteractionHand.MAIN_HAND, partialTick);
-        int frames = 0;
-        for (Layer layer : JasperLayers.sorted()) {
-            LayerState track = data.existing(AnimationTarget.MODEL, layer);
-            if (track == null) {
-                continue;
-            }
-            track.track().update(now);
-            if (!track.track().isActive()) {
-                continue;
-            }
-            if (FRAMES.size() <= frames) {
-                FRAMES.add(new TrackFrame());
-            }
-            TrackFrame frame = FRAMES.get(frames++);
-            frame.evaluate(track.track(), now, CONTEXT, null);
-            model.parts().apply(frame, Set.of());
-        }
-        look(frames, model.head(), netHeadYaw, headPitch);
+        FRAMES.evaluate(entity, AnimationTarget.MODEL, InteractionHand.MAIN_HAND, partialTick);
+        FRAMES.apply(model.parts()::part, Set.of());
+        look(model.head(), netHeadYaw, headPitch);
         frameEntity = entity;
         frameModel = model;
-        frameCount = frames;
     }
 
     public static void captureLocators(AnimatedModel<?> model, PoseStack poseStack) {
@@ -81,7 +59,7 @@ public final class EntityAdapter {
             return;
         }
         Matrix4f root = new Matrix4f(poseStack.last().pose());
-        LocatorCapture.capture(frameEntity, AnimationTarget.MODEL, FRAMES, frameCount, bone -> model.matrix(root, bone), UnaryOperator.identity(), MODEL_UNIT);
+        LocatorCapture.capture(frameEntity, AnimationTarget.MODEL, FRAMES.frames(), FRAMES.size(), bone -> model.matrix(root, bone), UnaryOperator.identity(), MODEL_UNIT);
         frameEntity = null;
     }
 
@@ -116,12 +94,12 @@ public final class EntityAdapter {
     }
 
     // From the top layer down, each one hides by its replace weight the look of the layers below it
-    private static void look(int frames, ModelPart head, float netHeadYaw, float headPitch) {
+    private static void look(ModelPart head, float netHeadYaw, float headPitch) {
         float pitch = 0.0F;
         float yaw = 0.0F;
         float visible = 1.0F;
-        for (int f = frames - 1; f >= 0 && visible > 0.0F; f--) {
-            TrackFrame frame = FRAMES.get(f);
+        for (int f = FRAMES.size() - 1; f >= 0 && visible > 0.0F; f--) {
+            TrackFrame frame = FRAMES.frame(f);
             float covered = 0.0F;
             for (int i = 0; i < frame.size(); i++) {
                 JasperAnimation animation = frame.animation(i);

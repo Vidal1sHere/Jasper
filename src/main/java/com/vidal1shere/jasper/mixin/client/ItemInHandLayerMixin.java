@@ -1,7 +1,7 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.vidal1shere.jasper.client.item.JasperItemRenderer;
+import com.vidal1shere.jasper.client.item.render.JasperItemRenderer;
 import com.vidal1shere.jasper.client.player.PlayerAdapter;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;

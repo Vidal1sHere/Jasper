@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.item;
+package com.vidal1shere.jasper.client.item.model;
 
 import com.google.gson.JsonParseException;
 import com.vidal1shere.jasper.Jasper;

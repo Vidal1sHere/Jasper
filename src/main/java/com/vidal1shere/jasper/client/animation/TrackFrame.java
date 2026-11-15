@@ -119,7 +119,11 @@ public final class TrackFrame {
         }
     }
 
-    private BonePose pose(int index, String bone) {
+    public float blend(int index) {
+        return blends[index];
+    }
+
+    public BonePose pose(int index, String bone) {
         return animations.get(index) == null ? IDENTITY : poses.get(index).get(bone);
     }
 

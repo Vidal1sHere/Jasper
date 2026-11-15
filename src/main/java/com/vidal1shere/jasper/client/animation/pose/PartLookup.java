@@ -1,8 +1,6 @@
-package com.vidal1shere.jasper.client.model;
+package com.vidal1shere.jasper.client.animation.pose;
 
 import com.mojang.logging.LogUtils;
-import com.vidal1shere.jasper.client.animation.JasperAnimation;
-import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import net.minecraft.client.model.geom.ModelPart;
 import net.neoforged.api.distmarker.Dist;
@@ -22,9 +20,8 @@ import java.util.Optional;
 import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
-public final class ModelParts {
+public final class PartLookup {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Set<String> BONES = new HashSet<>();
 
     private final ModelPart root;
     private final String owner;
@@ -32,35 +29,13 @@ public final class ModelParts {
     private final Set<String> missing = new HashSet<>();
     private final Map<String, Optional<List<ModelPart>>> chains = new HashMap<>();
 
-    public ModelParts(ModelPart root, String owner) {
+    public PartLookup(ModelPart root, String owner) {
         this.root = root;
         this.owner = owner;
     }
 
     public ModelPart root() {
         return root;
-    }
-
-    // Every part the frame animates, except locators and the ignored bones, which are not parts
-    public void apply(TrackFrame frame, Set<String> ignored) {
-        BONES.clear();
-        for (int i = 0; i < frame.size(); i++) {
-            JasperAnimation animation = frame.animation(i);
-            if (animation == null) {
-                continue;
-            }
-            for (String bone : animation.keyframes().bones().keySet()) {
-                if (!animation.locators().containsKey(bone) && !ignored.contains(bone)) {
-                    BONES.add(bone);
-                }
-            }
-        }
-        for (String bone : BONES) {
-            ModelPart part = part(bone);
-            if (part != null) {
-                frame.apply(bone, part, null);
-            }
-        }
     }
 
     // Unlike getAnyDescendantWithName, "root" is the part named root, not the root of the mesh, which models often do not render
