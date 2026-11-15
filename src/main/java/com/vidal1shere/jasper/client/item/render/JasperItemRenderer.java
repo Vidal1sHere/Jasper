@@ -111,10 +111,6 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         if (model == null) {
             return;
         }
-        model.parts().root().getAllParts().forEach(ModelPart::resetPose);
-        if (holder != null && holderHand != null) {
-            ItemAdapter.applyParts(holder, holderHand, model.parts(), displayContext.firstPerson(), Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
-        }
         ResourceLocation texture = baked.texture();
         if (stack.getItem() instanceof AnimatedItem item) {
             ResourceLocation override = item.texture(stack, holder, holderHand);
@@ -126,6 +122,10 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         // Placed like GeckoLib draws a geo item, so Blockbench GeckoLib display transforms fit
         poseStack.translate(0.5F, 0.5F, 0.5F);
         poseStack.scale(-1.0F, -1.0F, 1.0F);
+        model.parts().root().getAllParts().forEach(ModelPart::resetPose);
+        if (holder != null && holderHand != null) {
+            ItemAdapter.applyParts(holder, holderHand, model.parts(), displayContext.firstPerson(), poseStack, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
+        }
         VertexConsumer consumer = ItemRenderer.getFoilBufferDirect(buffer, model.renderType(texture), false, stack.hasFoil());
         model.renderToBuffer(poseStack, consumer, packedLight, packedOverlay);
         poseStack.popPose();

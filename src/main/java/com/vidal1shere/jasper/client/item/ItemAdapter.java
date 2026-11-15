@@ -61,21 +61,25 @@ public final class ItemAdapter {
         if (evaluate(entity, hand, true, partialTick) == 0) {
             return;
         }
-        boolean locators = false;
         for (int f = 0; f < FRAMES.size(); f++) {
-            TrackFrame frame = FRAMES.frame(f);
-            apply(frame, poseStack, buffer);
-            locators |= hasLocators(frame);
+            apply(FRAMES.frame(f), poseStack, buffer);
         }
-        if (locators) {
+        if (hasLocators()) {
             Matrix4f item = new Matrix4f(poseStack.last().pose());
             LocatorCapture.capture(entity, target(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? item : null, UnaryOperator.identity(), PIXEL);
         }
     }
 
-    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, boolean firstPersonView, float partialTick) {
-        if (evaluate(entity, hand, firstPersonView, partialTick) > 0) {
-            FRAMES.apply(parts::part, NOT_PARTS);
+    // The pose stack is at the model, where its parts render
+    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, boolean firstPersonView, PoseStack poseStack, float partialTick) {
+        if (evaluate(entity, hand, firstPersonView, partialTick) == 0) {
+            return;
+        }
+        FRAMES.apply(parts::part, NOT_PARTS);
+        // Outside first person only the world counts, not the player drawn in the inventory screen
+        if (hasLocators() && (firstPersonView || LocatorCapture.inLevel())) {
+            Matrix4f root = new Matrix4f(poseStack.last().pose());
+            LocatorCapture.capture(entity, target(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? null : parts.matrix(root, bone), UnaryOperator.identity(), PIXEL);
         }
     }
 
@@ -108,11 +112,14 @@ public final class ItemAdapter {
         return FRAMES.evaluate(entity, target(hand), hand, partialTick);
     }
 
-    private static boolean hasLocators(TrackFrame frame) {
-        for (int i = 0; i < frame.size(); i++) {
-            JasperAnimation animation = frame.animation(i);
-            if (animation != null && !animation.locators().isEmpty()) {
-                return true;
+    private static boolean hasLocators() {
+        for (int f = 0; f < FRAMES.size(); f++) {
+            TrackFrame frame = FRAMES.frame(f);
+            for (int i = 0; i < frame.size(); i++) {
+                JasperAnimation animation = frame.animation(i);
+                if (animation != null && !animation.locators().isEmpty()) {
+                    return true;
+                }
             }
         }
         return false;

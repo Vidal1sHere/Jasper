@@ -7,6 +7,7 @@ import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.attachment.BoundEffect;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.EffectData;
+import com.vidal1shere.jasper.client.attachment.LocatorData;
 import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
@@ -89,7 +90,6 @@ public final class ClientEffects {
         track.update(now);
         AnimationTrack.Entry entry = track.entry(track.size() - 1);
         float elapsed = entry.elapsed(now);
-        boolean visible = visible(entity, key.target());
         boolean firstPerson = entity instanceof LivingEntity living && BuiltinQueries.isFirstPerson(living);
         float from;
         if (entry == layer.firedEntry()) {
@@ -99,20 +99,20 @@ public final class ClientEffects {
             AnimationTrack.Entry previous = layer.firedEntry();
             int index = previous == null ? -1 : track.indexOf(previous);
             if (index >= 0) {
-                fire(entity, key, previous, track.animation(index, firstPerson), layer.firedTime(), previous.elapsed(Math.min(now, entry.startTick())), visible);
+                fire(entity, key, previous, track.animation(index, firstPerson), layer.firedTime(), previous.elapsed(Math.min(now, entry.startTick())), now);
             }
             from = now - entry.startTick() <= LATE_TICKS ? BEFORE_START : elapsed;
         }
         layer.fired(entry, elapsed);
-        fire(entity, key, entry, track.animation(track.size() - 1, firstPerson), from, elapsed, visible);
+        fire(entity, key, entry, track.animation(track.size() - 1, firstPerson), from, elapsed, now);
     }
 
-    private static void fire(Entity entity, LayerKey key, AnimationTrack.Entry entry, @Nullable JasperAnimation animation, float from, float to, boolean visible) {
+    private static void fire(Entity entity, LayerKey key, AnimationTrack.Entry entry, @Nullable JasperAnimation animation, float from, float to, long now) {
         if (animation == null || animation.effects().isEmpty()) {
             return;
         }
         animation.effects().fire(from, to, animation.length(), entry.cycles(animation), (effect, at) -> {
-            if (visible || !effect.effect().visual()) {
+            if (!effect.effect().visual() || visible(entity, key.target(), effect, now)) {
                 start(entity, key, entry, effect, at);
             }
         });
@@ -149,9 +149,28 @@ public final class ClientEffects {
         });
     }
 
-    private static boolean visible(Entity entity, AnimationTarget target) {
+    private static boolean visible(Entity entity, AnimationTarget target, EffectEntry effect, long now) {
         Minecraft minecraft = Minecraft.getInstance();
         boolean firstPerson = entity == minecraft.player && entity == minecraft.getCameraEntity() && minecraft.options.getCameraType().isFirstPerson();
-        return target == AnimationTarget.MODEL ? !firstPerson : firstPerson;
+        if (target == AnimationTarget.MODEL) {
+            return !firstPerson;
+        }
+        if (firstPerson) {
+            return true;
+        }
+        // Seen from outside, a hand effect needs the parts of a 3D item it hangs from; a flat item has none there, so it would land at the feet
+        LocatorData data = entity.getExistingDataOrNull(ClientAttachments.LOCATORS);
+        if (data == null || effect.locator() == null && effect.effect().locators().isEmpty()) {
+            return false;
+        }
+        if (effect.locator() != null && data.get(target, effect.locator(), now - EffectContext.FRESH_TICKS) == null) {
+            return false;
+        }
+        for (String locator : effect.effect().locators()) {
+            if (data.get(target, locator, now - EffectContext.FRESH_TICKS) == null) {
+                return false;
+            }
+        }
+        return true;
     }
 }

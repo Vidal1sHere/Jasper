@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 @OnlyIn(Dist.CLIENT)
 public final class EffectContext {
-    private static final long FRESH_TICKS = 2L;
+    public static final long FRESH_TICKS = 2L;
 
     private final Entity entity;
     private final AnimationTarget target;

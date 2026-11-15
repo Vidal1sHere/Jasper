@@ -4,8 +4,10 @@ import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.attachment.LocatorData;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -21,6 +23,8 @@ final class PlayingTrail implements PlayingEffect {
     final Deque<Ring> rings = new ArrayDeque<>();
     private final Entity entity;
     private final AnimationTarget target;
+    // Hand trails seen in first person live in the hand pass, those of a 3D item seen from outside in the world
+    private final boolean hand;
     private final boolean persist;
     private boolean recording = true;
     private double lastRing = Double.NEGATIVE_INFINITY;
@@ -30,6 +34,7 @@ final class PlayingTrail implements PlayingEffect {
         this.effect = effect;
         this.entity = context.entity();
         this.target = context.target();
+        this.hand = target != AnimationTarget.MODEL && entity instanceof LivingEntity living && BuiltinQueries.isFirstPerson(living);
         this.persist = context.persist();
         this.anchor = entity.position();
     }
@@ -89,7 +94,7 @@ final class PlayingTrail implements PlayingEffect {
     }
 
     boolean hand() {
-        return target != AnimationTarget.MODEL;
+        return hand;
     }
 
     void trim(double now) {
