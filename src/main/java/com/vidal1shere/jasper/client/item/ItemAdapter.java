@@ -10,6 +10,7 @@ import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.LayerState;
+import com.vidal1shere.jasper.client.model.ModelParts;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.layer.AnimationTarget;
@@ -24,12 +25,15 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public final class ItemAdapter {
     public static final String BONE = "item";
+    private static final Set<String> NOT_PARTS = Set.of(BONE);
+    private static final float PIXEL = 1.0F / 16.0F;
 
     private static final MolangContext CONTEXT = new MolangContext();
     private static final AnimationPose POSE = new AnimationPose();
@@ -88,7 +92,35 @@ public final class ItemAdapter {
         }
         if (frames > 0) {
             Matrix4f item = new Matrix4f(poseStack.last().pose());
-            LocatorCapture.capture(entity, target(hand), FRAMES, frames, bone -> bone.equals(BONE) ? item : null, UnaryOperator.identity(), 1.0F);
+            LocatorCapture.capture(entity, target(hand), FRAMES, frames, bone -> bone.equals(BONE) ? item : null, UnaryOperator.identity(), PIXEL);
+        }
+    }
+
+    // The parts of a 3D item, from the same hand track as the item bone
+    public static void applyParts(LivingEntity entity, InteractionHand hand, ModelParts parts, float partialTick) {
+        ClientAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
+        if (data == null || isSuppressed(entity)) {
+            return;
+        }
+        double now = entity.level().getGameTime() + partialTick;
+        boolean filled = false;
+        boolean mirrored = BuiltinQueries.isLeftArm(entity, hand);
+        int frames = 0;
+        for (Layer layer : JasperLayers.sorted()) {
+            LayerState track = data.existing(target(hand), layer);
+            if (!isActive(track, now)) {
+                continue;
+            }
+            if (!filled) {
+                BuiltinQueries.fill(CONTEXT, entity, hand, partialTick);
+                filled = true;
+            }
+            if (FRAMES.size() <= frames) {
+                FRAMES.add(new TrackFrame());
+            }
+            TrackFrame frame = FRAMES.get(frames++);
+            frame.evaluate(track.track(), now, CONTEXT, mirrored ? NO_PAIRS : null);
+            parts.apply(frame, NOT_PARTS);
         }
     }
 

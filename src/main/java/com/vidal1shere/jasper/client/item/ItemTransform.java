@@ -28,10 +28,11 @@ public class ItemTransform {
         this.sz = 1.0f;
     }
 
+    // The pose position is in pixels, the pivot in blocks
     public void set(BonePose pose, Vector3f pivot) {
-        this.tx = pose.position.x;
-        this.ty = pose.position.y;
-        this.tz = pose.position.z;
+        this.tx = pose.position.x / 16.0f;
+        this.ty = pose.position.y / 16.0f;
+        this.tz = pose.position.z / 16.0f;
         this.rotation.identity().rotateX(pose.rotation.x).rotateY(pose.rotation.y).rotateZ(pose.rotation.z);
         this.sx = pose.scale.x;
         this.sy = pose.scale.y;

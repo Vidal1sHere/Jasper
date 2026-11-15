@@ -28,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -38,7 +37,6 @@ import java.util.function.UnaryOperator;
 public final class EntityAdapter {
     private static final MolangContext CONTEXT = new MolangContext();
     private static final List<TrackFrame> FRAMES = new ArrayList<>();
-    private static final Set<String> BONES = new HashSet<>();
     // Model parts and their locators are in pixels
     private static final float MODEL_UNIT = 1.0F / 16.0F;
 
@@ -70,7 +68,7 @@ public final class EntityAdapter {
             }
             TrackFrame frame = FRAMES.get(frames++);
             frame.evaluate(track.track(), now, CONTEXT, null);
-            apply(frame, model);
+            model.parts().apply(frame, Set.of());
         }
         look(frames, model.head(), netHeadYaw, headPitch);
         frameEntity = entity;
@@ -115,27 +113,6 @@ public final class EntityAdapter {
             return false;
         }
         return options.loop() || animation.loop() != JasperAnimation.LoopType.PLAY_ONCE || now < start + animation.length() * 20.0 / options.speed();
-    }
-
-    private static void apply(TrackFrame frame, AnimatedModel<?> model) {
-        BONES.clear();
-        for (int i = 0; i < frame.size(); i++) {
-            JasperAnimation animation = frame.animation(i);
-            if (animation == null) {
-                continue;
-            }
-            for (String bone : animation.keyframes().bones().keySet()) {
-                if (!animation.locators().containsKey(bone)) {
-                    BONES.add(bone);
-                }
-            }
-        }
-        for (String bone : BONES) {
-            ModelPart part = model.part(bone);
-            if (part != null) {
-                frame.apply(bone, part, null);
-            }
-        }
     }
 
     // From the top layer down, each one hides by its replace weight the look of the layers below it

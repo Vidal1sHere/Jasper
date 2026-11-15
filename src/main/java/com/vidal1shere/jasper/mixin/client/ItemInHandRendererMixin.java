@@ -3,6 +3,7 @@ package com.vidal1shere.jasper.mixin.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.effect.trail.Trails;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
+import com.vidal1shere.jasper.client.item.JasperItemRenderer;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
@@ -16,6 +17,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
+    @Inject(method = "renderArmWithItem", at = @At("HEAD"))
+    private void jasper$setItemHolder(AbstractClientPlayer player, float partialTicks, float pitch, InteractionHand hand, float swingProgress, ItemStack stack, float equippedProgress, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, CallbackInfo ci) {
+        JasperItemRenderer.setHolder(player, hand);
+    }
+
+    @Inject(method = "renderArmWithItem", at = @At("RETURN"))
+    private void jasper$clearItemHolder(AbstractClientPlayer player, float partialTicks, float pitch, InteractionHand hand, float swingProgress, ItemStack stack, float equippedProgress, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, CallbackInfo ci) {
+        JasperItemRenderer.clearHolder();
+    }
+
     @Inject(
             method = "renderArmWithItem",
             at = @At(

@@ -46,13 +46,13 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String SUFFIX = ".animation.json";
     private static final float PIXEL = 1.0F / 16.0F;
-    private static final KeyframeJson.Units PIXEL_UNITS = new KeyframeJson.Units(new Vector3f(PIXEL, -PIXEL, PIXEL), new Vector3f(Mth.DEG_TO_RAD));
     private static final KeyframeJson.Units MODEL_UNITS = new KeyframeJson.Units(new Vector3f(1.0F, -1.0F, 1.0F), new Vector3f(Mth.DEG_TO_RAD));
     private static final Set<String> POSE_FIELDS = Set.of("blend_mode", "bone_modes", "look");
     private static final Set<String> LOOK_FIELDS = Set.of("pitch", "yaw");
     private static final Set<String> LOCATOR_FIELDS = Set.of("parent", "position");
 
-    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", Set.of(ItemAdapter.BONE), PIXEL_UNITS, Set.of("pivot"));
+    // Any bone: the item bone and the parts of a 3D item model
+    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", null, MODEL_UNITS, Set.of("pivot"));
     public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, MODEL_UNITS, POSE_FIELDS);
     public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, MODEL_UNITS, POSE_FIELDS);
 
