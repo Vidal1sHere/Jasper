@@ -13,8 +13,8 @@ import java.util.Map;
 public final class LocatorData {
     private final Map<AnimationTarget, Map<String, CapturedLocator>> captured = new EnumMap<>(AnimationTarget.class);
 
-    public void put(AnimationTarget target, String locator, Vec3 position, long tick) {
-        captured.computeIfAbsent(target, key -> new HashMap<>()).put(locator, new CapturedLocator(position, tick));
+    public void put(AnimationTarget target, String locator, Vec3 position, long tick, long frame) {
+        captured.computeIfAbsent(target, key -> new HashMap<>()).put(locator, new CapturedLocator(position, tick, frame));
     }
 
     // Null when it was never captured or only before the given tick
@@ -23,5 +23,13 @@ public final class LocatorData {
         Map<String, CapturedLocator> locators = captured.get(target);
         CapturedLocator found = locators == null ? null : locators.get(locator);
         return found == null || found.tick() < since ? null : found.position();
+    }
+
+    // Null unless it was captured in that render frame
+    @Nullable
+    public Vec3 inFrame(AnimationTarget target, String locator, long frame) {
+        Map<String, CapturedLocator> locators = captured.get(target);
+        CapturedLocator found = locators == null ? null : locators.get(locator);
+        return found == null || found.frame() != frame ? null : found.position();
     }
 }

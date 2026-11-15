@@ -74,13 +74,23 @@ public final class EffectJson {
         AnimationEffect effect = codec.decode(JsonOps.INSTANCE, JsonOps.INSTANCE.getMap(json).getOrThrow())
                 .getOrThrow(message -> new JsonParseException(field + ": " + message));
         String locator = json.has("locator") ? GsonHelper.getAsString(json, "locator") : null;
-        if (locator != null && !locators.containsKey(locator)) {
-            if (bones != null && !bones.contains(locator)) {
-                throw new JsonParseException(field + ".locator: unknown locator '" + locator + "', expected one of " + locators.keySet() + " or a bone " + bones);
-            }
-            locators.put(locator, Locator.bone(locator));
+        if (locator != null) {
+            locator(locator, field + ".locator", locators, bones);
+        }
+        for (String read : effect.locators()) {
+            locator(read, field + ".locators", locators, bones);
         }
         return new EffectEntry(time, effect, locator, GsonHelper.getAsBoolean(json, "follow", false), until(json, field, time, length), GsonHelper.getAsBoolean(json, "persist", true));
+    }
+
+    private static void locator(String name, String field, Map<String, Locator> locators, @Nullable Set<String> bones) {
+        if (locators.containsKey(name)) {
+            return;
+        }
+        if (bones != null && !bones.contains(name)) {
+            throw new JsonParseException(field + ": unknown locator '" + name + "', expected one of " + locators.keySet() + " or a bone " + bones);
+        }
+        locators.put(name, Locator.bone(name));
     }
 
     private static float until(JsonObject json, String field, float time, float length) {

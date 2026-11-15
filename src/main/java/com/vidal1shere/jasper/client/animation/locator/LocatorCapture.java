@@ -39,11 +39,18 @@ public final class LocatorCapture {
 
     // Entities also render outside of the world, like the player in the inventory screen
     private static boolean inLevel;
+    private static long renderFrame;
+
+    // Counts the world renders, so a reader can tell the locators captured in this one
+    public static long renderFrame() {
+        return renderFrame;
+    }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
             inLevel = true;
+            renderFrame++;
         } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
             inLevel = false;
         }
@@ -77,7 +84,7 @@ public final class LocatorCapture {
                     if (data == null) {
                         data = entity.getData(ClientAttachments.LOCATORS);
                     }
-                    data.put(target, name, camera.add(POINT.x, POINT.y, POINT.z), entity.level().getGameTime());
+                    data.put(target, name, camera.add(POINT.x, POINT.y, POINT.z), entity.level().getGameTime(), renderFrame);
                 }
             }
         }

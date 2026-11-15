@@ -1,5 +1,7 @@
 package com.vidal1shere.jasper.client.animation.keyframe;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -44,6 +46,11 @@ public enum Easing {
     EASE_IN_OUT_BOUNCE;
 
     private static final Easing[] VALUES = values();
+
+    public static final Codec<Easing> CODEC = Codec.STRING.comapFlatMap(name -> {
+        Easing easing = byName(name);
+        return easing == null ? DataResult.error(() -> "Unknown easing '" + name + "', expected one of " + names()) : DataResult.success(easing);
+    }, Easing::id);
 
     private final String id = name().replace("_", "").toLowerCase(Locale.ROOT);
 
