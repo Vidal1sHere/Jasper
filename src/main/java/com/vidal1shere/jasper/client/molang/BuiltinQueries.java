@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @OnlyIn(Dist.CLIENT)
-public final class AnimationQueries {
+public final class BuiltinQueries {
     private static final Vector3f LOOK = new Vector3f();
     private static final List<QuerySource> SOURCES = new CopyOnWriteArrayList<>();
 

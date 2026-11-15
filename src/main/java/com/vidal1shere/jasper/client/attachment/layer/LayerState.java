@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import org.jetbrains.annotations.Nullable;
 
-public final class LayerTrack {
+public final class LayerState {
     private final AnimationTrack track;
     private InteractionHand hand = InteractionHand.MAIN_HAND;
     @Nullable
@@ -17,8 +17,11 @@ public final class LayerTrack {
     private long playedStart;
     private PlayOptions playedOptions = PlayOptions.DEFAULT;
     private boolean driverSeen;
+    @Nullable
+    private AnimationTrack.Entry firedEntry;
+    private float firedTime;
 
-    public LayerTrack(JasperAnimationLoader loader) {
+    public LayerState(JasperAnimationLoader loader) {
         this.track = new AnimationTrack(loader);
     }
 
@@ -69,6 +72,21 @@ public final class LayerTrack {
         playedStart = startTick;
         playedOptions = options;
         track.set(animation, startTick, options.speed(), options.loop());
+    }
+
+    // The entry whose effects fired last and how far, in elapsed seconds
+    @Nullable
+    public AnimationTrack.Entry firedEntry() {
+        return firedEntry;
+    }
+
+    public float firedTime() {
+        return firedTime;
+    }
+
+    public void fired(AnimationTrack.Entry entry, float time) {
+        firedEntry = entry;
+        firedTime = time;
     }
 
     public void endPlay() {

@@ -28,7 +28,7 @@ public record SavedAnimation(AnimationTarget target, ResourceLocation layer, Res
             OPTIONS_CODEC.forGetter(SavedAnimation::options)
     ).apply(instance, SavedAnimation::new));
 
-    public boolean sameSlot(AnimationTarget target, ResourceLocation layer) {
+    public boolean sameKey(AnimationTarget target, ResourceLocation layer) {
         return this.target == target && this.layer.equals(layer);
     }
 }

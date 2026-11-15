@@ -1,6 +1,6 @@
 package com.vidal1shere.jasper.client;
 
-import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
+import com.vidal1shere.jasper.client.attachment.layer.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.Layer;
@@ -22,7 +22,7 @@ public final class ClientAnimations {
 
     // A null animation stops the layer; synced plays pass the start tick of the server
     public static void play(Entity entity, Layer layer, AnimationTarget target, @Nullable ResourceLocation animation, long startTick, PlayOptions options) {
-        LayerTrack track = entity.getData(ClientAttachments.LAYERS).track(target, layer, loader(entity, target));
+        LayerState track = entity.getData(ClientAttachments.LAYERS).track(target, layer, loader(entity, target));
         if (animation != null) {
             track.setHand(options.hand());
         }

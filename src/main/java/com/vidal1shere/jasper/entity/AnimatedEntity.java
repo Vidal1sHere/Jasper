@@ -1,6 +1,6 @@
 package com.vidal1shere.jasper.entity;
 
-import com.vidal1shere.jasper.JasperAnimations;
+import com.vidal1shere.jasper.ServerAnimations;
 import com.vidal1shere.jasper.client.ClientAnimations;
 import com.vidal1shere.jasper.layer.AnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
@@ -36,7 +36,7 @@ public interface AnimatedEntity {
         if (entity.level().isClientSide()) {
             ClientAnimations.play(entity, layer, AnimationTarget.MODEL, animation, PlayOptions.DEFAULT);
         } else {
-            JasperAnimations.play(entity, layer, AnimationTarget.MODEL, animation, PlayOptions.DEFAULT);
+            ServerAnimations.play(entity, layer, AnimationTarget.MODEL, animation, PlayOptions.DEFAULT);
         }
     }
 
@@ -49,7 +49,7 @@ public interface AnimatedEntity {
         if (entity.level().isClientSide()) {
             ClientAnimations.stop(entity, layer, AnimationTarget.MODEL);
         } else {
-            JasperAnimations.stop(entity, layer, AnimationTarget.MODEL);
+            ServerAnimations.stop(entity, layer, AnimationTarget.MODEL);
         }
     }
 

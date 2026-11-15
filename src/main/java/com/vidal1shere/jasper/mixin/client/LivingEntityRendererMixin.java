@@ -1,7 +1,8 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.vidal1shere.jasper.client.player.ClientPlayerAnimations;
+import com.vidal1shere.jasper.client.player.PlayerAdapter;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,24 +19,31 @@ public abstract class LivingEntityRendererMixin {
     @Inject(method = RENDER, at = @At("HEAD"))
     private void jasper$captureWorldRotation(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity instanceof Player) {
-            ClientPlayerAnimations.captureWorld(poseStack);
+            PlayerAdapter.captureWorld(poseStack);
         }
     }
 
     @Inject(method = RENDER, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;prepareMobModel(Lnet/minecraft/world/entity/Entity;FFF)V"))
     private void jasper$preparePlayerAnimation(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity instanceof Player) {
-            ClientPlayerAnimations.prepare(entity, partialTicks, poseStack);
-            if (ClientPlayerAnimations.isAnimating(entity)) {
-                ClientPlayerAnimations.applyRoot(poseStack);
+            PlayerAdapter.prepare(entity, partialTicks, poseStack);
+            if (PlayerAdapter.isAnimating(entity)) {
+                PlayerAdapter.applyRoot(poseStack);
             }
+        }
+    }
+
+    @Inject(method = RENDER, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"))
+    private void jasper$capturePlayerLocators(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
+        if (entity instanceof Player && PlayerAdapter.isAnimating(entity) && ((LivingEntityRenderer<?, ?>) (Object) this).getModel() instanceof PlayerModel<?> model) {
+            PlayerAdapter.captureModelLocators(entity, model, poseStack);
         }
     }
 
     @Inject(method = RENDER, at = @At("RETURN"))
     private void jasper$finishPlayerAnimation(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity instanceof Player) {
-            ClientPlayerAnimations.finish();
+            PlayerAdapter.finish();
         }
     }
 }

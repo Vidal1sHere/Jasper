@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @OnlyIn(Dist.CLIENT)
-public record KeyframeAnimation(float lengthInSeconds, LoopType loop, float blendTicks, Map<String, BoneAnimation> bones, MolangValue preAnimation) {
+public record BoneTimeline(float lengthInSeconds, LoopType loop, float blendTicks, Map<String, BoneChannels> bones, MolangValue preAnimation) {
     public static final float DEFAULT_BLEND_TICKS = 2.0F;
 
     public enum LoopType {
@@ -38,7 +38,7 @@ public record KeyframeAnimation(float lengthInSeconds, LoopType loop, float blen
     @OnlyIn(Dist.CLIENT)
     public static class Builder {
         private final float length;
-        private final Map<String, List<AnimationKeyframe>[]> bones = new LinkedHashMap<>();
+        private final Map<String, List<BoneKeyframe>[]> bones = new LinkedHashMap<>();
         private LoopType loop = LoopType.PLAY_ONCE;
         private float blendTicks = DEFAULT_BLEND_TICKS;
         private MolangValue preAnimation = MolangValue.ZERO;
@@ -70,36 +70,36 @@ public record KeyframeAnimation(float lengthInSeconds, LoopType loop, float blen
             return this;
         }
 
-        public Builder position(String bone, AnimationKeyframe... keyframes) {
+        public Builder position(String bone, BoneKeyframe... keyframes) {
             return add(bone, 0, keyframes);
         }
 
-        public Builder rotation(String bone, AnimationKeyframe... keyframes) {
+        public Builder rotation(String bone, BoneKeyframe... keyframes) {
             return add(bone, 1, keyframes);
         }
 
-        public Builder scale(String bone, AnimationKeyframe... keyframes) {
+        public Builder scale(String bone, BoneKeyframe... keyframes) {
             return add(bone, 2, keyframes);
         }
 
         @SuppressWarnings("unchecked")
-        private Builder add(String bone, int channel, AnimationKeyframe... keyframes) {
-            List<AnimationKeyframe>[] channels = bones.computeIfAbsent(bone, key -> new List[]{new ArrayList<>(), new ArrayList<>(), new ArrayList<>()});
+        private Builder add(String bone, int channel, BoneKeyframe... keyframes) {
+            List<BoneKeyframe>[] channels = bones.computeIfAbsent(bone, key -> new List[]{new ArrayList<>(), new ArrayList<>(), new ArrayList<>()});
             channels[channel].addAll(List.of(keyframes));
             return this;
         }
 
-        public KeyframeAnimation build() {
-            Map<String, BoneAnimation> built = new LinkedHashMap<>();
-            bones.forEach((bone, channels) -> built.put(bone, new BoneAnimation(sorted(channels[0]), sorted(channels[1]), sorted(channels[2]))));
-            return new KeyframeAnimation(length, loop, blendTicks, Map.copyOf(built), preAnimation);
+        public BoneTimeline build() {
+            Map<String, BoneChannels> built = new LinkedHashMap<>();
+            bones.forEach((bone, channels) -> built.put(bone, new BoneChannels(sorted(channels[0]), sorted(channels[1]), sorted(channels[2]))));
+            return new BoneTimeline(length, loop, blendTicks, Map.copyOf(built), preAnimation);
         }
 
-        private static AnimationKeyframe[] sorted(List<AnimationKeyframe> keyframes) {
+        private static BoneKeyframe[] sorted(List<BoneKeyframe> keyframes) {
             if (keyframes.isEmpty()) {
-                return BoneAnimation.NONE;
+                return BoneChannels.NONE;
             }
-            return keyframes.stream().sorted(Comparator.comparingDouble(AnimationKeyframe::time)).toArray(AnimationKeyframe[]::new);
+            return keyframes.stream().sorted(Comparator.comparingDouble(BoneKeyframe::time)).toArray(BoneKeyframe[]::new);
         }
     }
 }

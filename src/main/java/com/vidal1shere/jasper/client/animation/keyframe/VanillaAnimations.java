@@ -19,17 +19,17 @@ public final class VanillaAnimations {
     }
 
     public static JasperAnimation convert(AnimationDefinition definition, JasperAnimation.Look look) {
-        return convert(definition, definition.looping() ? KeyframeAnimation.LoopType.LOOP : KeyframeAnimation.LoopType.PLAY_ONCE, look);
+        return convert(definition, definition.looping() ? BoneTimeline.LoopType.LOOP : BoneTimeline.LoopType.PLAY_ONCE, look);
     }
 
-    public static JasperAnimation convert(AnimationDefinition definition, KeyframeAnimation.LoopType loop, JasperAnimation.Look look) {
-        KeyframeAnimation.Builder builder = KeyframeAnimation.builder(definition.lengthInSeconds()).loop(loop);
+    public static JasperAnimation convert(AnimationDefinition definition, BoneTimeline.LoopType loop, JasperAnimation.Look look) {
+        BoneTimeline.Builder builder = BoneTimeline.builder(definition.lengthInSeconds()).loop(loop);
         for (Map.Entry<String, List<AnimationChannel>> bone : definition.boneAnimations().entrySet()) {
             for (AnimationChannel channel : bone.getValue()) {
                 AnimationChannel.Target target = channel.target();
                 // Vanilla stores the scale minus one, so an untouched channel is zero
                 float offset = target == AnimationChannel.Targets.SCALE ? 1.0F : 0.0F;
-                AnimationKeyframe[] keyframes = new AnimationKeyframe[channel.keyframes().length];
+                BoneKeyframe[] keyframes = new BoneKeyframe[channel.keyframes().length];
                 for (int i = 0; i < keyframes.length; i++) {
                     keyframes[i] = keyframe(channel.keyframes()[i], offset);
                 }
@@ -45,9 +45,9 @@ public final class VanillaAnimations {
         return new JasperAnimation(builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT, false);
     }
 
-    private static AnimationKeyframe keyframe(Keyframe keyframe, float offset) {
+    private static BoneKeyframe keyframe(Keyframe keyframe, float offset) {
         Vector3f value = keyframe.target();
         Easing easing = keyframe.interpolation() == AnimationChannel.Interpolations.CATMULLROM ? Easing.CATMULLROM : Easing.LINEAR;
-        return AnimationKeyframe.of(keyframe.timestamp(), value.x + offset, value.y + offset, value.z + offset, easing);
+        return BoneKeyframe.of(keyframe.timestamp(), value.x + offset, value.y + offset, value.z + offset, easing);
     }
 }

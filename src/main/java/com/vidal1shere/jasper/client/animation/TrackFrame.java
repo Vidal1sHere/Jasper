@@ -3,7 +3,7 @@ package com.vidal1shere.jasper.client.animation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
-import com.vidal1shere.jasper.client.animation.pose.BoneTargets;
+import com.vidal1shere.jasper.client.animation.pose.PartPoses;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -21,7 +21,7 @@ public final class TrackFrame {
 
     private final List<AnimationPose> poses = new ArrayList<>();
     private final List<JasperAnimation> animations = new ArrayList<>();
-    private final float[] blends = new float[AnimationTrack.MAX_LAYERS];
+    private final float[] blends = new float[AnimationTrack.MAX_FADES];
     private final BonePose current = new BonePose();
     private final BonePose blended = new BonePose();
     private final BonePose layer = new BonePose();
@@ -82,23 +82,40 @@ public final class TrackFrame {
     }
 
     public void transform(PoseStack poseStack, String bone, Vector3f pivot) {
-        BoneTargets.transform(poseStack, blend(bone), pivot);
+        PartPoses.transform(poseStack, blend(bone), pivot);
+    }
+
+    public boolean mirrored() {
+        return mirrorPairs != null;
     }
 
     public void apply(String bone, ModelPart part, @Nullable ModelPart overlay) {
         if (!animates(bone)) {
             return;
         }
-        BoneTargets.read(part, current);
-        PartPose initial = part.getInitialPose();
+        PartPoses.read(part, current);
+        blend(bone, part.getInitialPose());
+        PartPoses.write(blended, part);
+        if (overlay != null) {
+            overlay.copyFrom(part);
+        }
+    }
+
+    // The same as apply, for bones that are only a pose, like locators
+    public void resolve(String bone, BonePose pose, PartPose initial) {
+        if (!animates(bone)) {
+            return;
+        }
+        current.set(pose);
+        blend(bone, initial);
+        pose.set(blended);
+    }
+
+    private void blend(String bone, PartPose initial) {
         resolve(0, bone, initial, blended);
         for (int i = 1; i < size; i++) {
             resolve(i, bone, initial, layer);
             blended.lerp(layer, blends[i]);
-        }
-        BoneTargets.write(blended, part);
-        if (overlay != null) {
-            overlay.copyFrom(part);
         }
     }
 
@@ -112,7 +129,7 @@ public final class TrackFrame {
             out.set(current);
             return;
         }
-        BoneTargets.resolve(current, initial, poses.get(index).get(bone), animation.mode(source(bone)), out);
+        PartPoses.resolve(current, initial, poses.get(index).get(bone), animation.mode(source(bone)), out);
     }
 
     // The bone the animation wrote for this one, before the mirror swapped them

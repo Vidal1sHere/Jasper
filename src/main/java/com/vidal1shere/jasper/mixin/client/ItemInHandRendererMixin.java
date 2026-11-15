@@ -1,7 +1,7 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.vidal1shere.jasper.client.item.ClientItemAnimations;
+import com.vidal1shere.jasper.client.item.ItemAdapter;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -23,6 +23,6 @@ public abstract class ItemInHandRendererMixin {
             )
     )
     private void jasper$applyItemAnimation(AbstractClientPlayer player, float partialTicks, float pitch, InteractionHand hand, float swingProgress, ItemStack stack, float equippedProgress, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, CallbackInfo ci) {
-        ClientItemAnimations.apply(player, hand, poseStack, buffer, partialTicks);
+        ItemAdapter.apply(player, hand, poseStack, buffer, partialTicks);
     }
 }

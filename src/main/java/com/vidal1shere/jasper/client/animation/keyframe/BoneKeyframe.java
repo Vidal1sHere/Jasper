@@ -7,13 +7,13 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
-public record AnimationKeyframe(float time, MolangValue x, MolangValue y, MolangValue z, Easing easing, float easingArgument) {
-    public static AnimationKeyframe of(float time, float x, float y, float z) {
+public record BoneKeyframe(float time, MolangValue x, MolangValue y, MolangValue z, Easing easing, float easingArgument) {
+    public static BoneKeyframe of(float time, float x, float y, float z) {
         return of(time, x, y, z, Easing.LINEAR);
     }
 
-    public static AnimationKeyframe of(float time, float x, float y, float z, Easing easing) {
-        return new AnimationKeyframe(time, MolangValue.constant(x), MolangValue.constant(y), MolangValue.constant(z), easing, easing.defaultArgument());
+    public static BoneKeyframe of(float time, float x, float y, float z, Easing easing) {
+        return new BoneKeyframe(time, MolangValue.constant(x), MolangValue.constant(y), MolangValue.constant(z), easing, easing.defaultArgument());
     }
 
     public Vector3f evaluate(MolangContext context, Vector3f out) {

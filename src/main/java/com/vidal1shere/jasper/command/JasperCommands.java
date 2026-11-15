@@ -8,7 +8,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.vidal1shere.jasper.Jasper;
-import com.vidal1shere.jasper.JasperAnimations;
+import com.vidal1shere.jasper.ServerAnimations;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
@@ -62,7 +62,7 @@ public final class JasperCommands {
         int count = 0;
         for (Entity entity : EntityArgument.getEntities(context, "entities")) {
             if (entity instanceof LivingEntity living) {
-                JasperAnimations.play(living, layer, target, animation, options);
+                ServerAnimations.play(living, layer, target, animation, options);
                 count++;
             }
         }
@@ -80,7 +80,7 @@ public final class JasperCommands {
         int count = 0;
         for (Entity entity : EntityArgument.getEntities(context, "entities")) {
             if (entity instanceof LivingEntity living) {
-                JasperAnimations.stop(living, layer, target);
+                ServerAnimations.stop(living, layer, target);
                 count++;
             }
         }

@@ -12,20 +12,20 @@ import org.joml.Vector3f;
 import java.util.Map;
 
 @OnlyIn(Dist.CLIENT)
-public final class KeyframeAnimations {
+public final class BoneSampler {
     private static final Vector3f P0 = new Vector3f();
     private static final Vector3f P1 = new Vector3f();
     private static final Vector3f P2 = new Vector3f();
     private static final Vector3f P3 = new Vector3f();
 
-    public static void evaluate(KeyframeAnimation animation, float elapsedSeconds, MolangContext context, AnimationPose pose) {
+    public static void evaluate(BoneTimeline animation, float elapsedSeconds, MolangContext context, AnimationPose pose) {
         pose.reset();
         context.resetVariables();
         context.set(MolangQuery.ANIM_TIME, elapsedSeconds);
         animation.preAnimation().get(context);
         float time = animation.localTime(elapsedSeconds);
-        for (Map.Entry<String, BoneAnimation> entry : animation.bones().entrySet()) {
-            BoneAnimation bone = entry.getValue();
+        for (Map.Entry<String, BoneChannels> entry : animation.bones().entrySet()) {
+            BoneChannels bone = entry.getValue();
             BonePose target = pose.get(entry.getKey());
             if (bone.position().length > 0) {
                 sample(bone.position(), time, context, target.position);
@@ -42,15 +42,15 @@ public final class KeyframeAnimations {
         }
     }
 
-    private static void sample(AnimationKeyframe[] keyframes, float time, MolangContext context, Vector3f out) {
+    private static void sample(BoneKeyframe[] keyframes, float time, MolangContext context, Vector3f out) {
         int last = keyframes.length - 1;
         int from = 0;
         while (from < last && keyframes[from + 1].time() <= time) {
             from++;
         }
         int to = Math.min(from + 1, last);
-        AnimationKeyframe start = keyframes[from];
-        AnimationKeyframe end = keyframes[to];
+        BoneKeyframe start = keyframes[from];
+        BoneKeyframe end = keyframes[to];
         if (from == to || time <= start.time()) {
             start.evaluate(context, out);
             return;

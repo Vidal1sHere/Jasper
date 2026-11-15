@@ -5,10 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import com.vidal1shere.jasper.client.animation.keyframe.AnimationKeyframe;
-import com.vidal1shere.jasper.client.animation.keyframe.BoneAnimation;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneChannels;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.keyframe.Easing;
-import com.vidal1shere.jasper.client.animation.keyframe.KeyframeAnimation;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneKeyframe;
 import com.vidal1shere.jasper.client.molang.MolangParser;
 import com.vidal1shere.jasper.client.molang.MolangValue;
 import net.minecraft.util.GsonHelper;
@@ -26,8 +26,8 @@ import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
 public final class KeyframeJson {
-    public static final Set<String> ROOT_FIELDS = Set.of("format_version", "geckolib_format_version", "animations");
-    private static final Set<String> ANIMATION_FIELDS = Set.of("animation_length", "loop", "bones", "blend_ticks", "pre_animation");
+    public static final Set<String> ROOT_FIELDS = Set.of("format_version", "geckolib_format_version", "animations", "locators");
+    private static final Set<String> ANIMATION_FIELDS = Set.of("animation_length", "loop", "bones", "blend_ticks", "pre_animation", "locators", "effects");
     private static final Set<String> UNSUPPORTED = Set.of("sound_effects", "particle_effects", "timeline");
     private static final Set<String> CHANNELS = Set.of("position", "rotation", "scale");
     private static final Set<String> KEYFRAME_FIELDS = Set.of("vector", "pre", "post", "easing", "easingArgs", "lerp_mode");
@@ -43,7 +43,7 @@ public final class KeyframeJson {
         }
     }
 
-    public static KeyframeAnimation parse(JsonObject json, @Nullable Set<String> bones, Units units, Set<String> extraFields) {
+    public static BoneTimeline parse(JsonObject json, @Nullable Set<String> bones, Units units, Set<String> extraFields) {
         for (String field : json.keySet()) {
             if (UNSUPPORTED.contains(field)) {
                 throw new JsonParseException(field + ": not supported yet");
@@ -53,7 +53,7 @@ public final class KeyframeJson {
             }
         }
         JsonObject bonesJson = GsonHelper.getAsJsonObject(json, "bones");
-        Map<String, BoneAnimation> parsed = new LinkedHashMap<>();
+        Map<String, BoneChannels> parsed = new LinkedHashMap<>();
         float lastKeyframe = 0.0F;
         for (Map.Entry<String, JsonElement> bone : bonesJson.entrySet()) {
             String name = bone.getKey();
@@ -67,7 +67,7 @@ public final class KeyframeJson {
                     throw new JsonParseException(field + "." + channel + ": unknown channel, expected one of " + CHANNELS);
                 }
             }
-            BoneAnimation animation = new BoneAnimation(
+            BoneChannels animation = new BoneChannels(
                     channel(channels, "position", field, units.position()),
                     channel(channels, "rotation", field, units.rotation()),
                     channel(channels, "scale", field, new Vector3f(1.0F))
@@ -76,8 +76,8 @@ public final class KeyframeJson {
             parsed.put(name, animation);
         }
         float length = json.has("animation_length") ? GsonHelper.getAsFloat(json, "animation_length") : lastKeyframe;
-        float blendTicks = GsonHelper.getAsFloat(json, "blend_ticks", KeyframeAnimation.DEFAULT_BLEND_TICKS);
-        return new KeyframeAnimation(length, loop(json), blendTicks, Map.copyOf(parsed), preAnimation(json));
+        float blendTicks = GsonHelper.getAsFloat(json, "blend_ticks", BoneTimeline.DEFAULT_BLEND_TICKS);
+        return new BoneTimeline(length, loop(json), blendTicks, Map.copyOf(parsed), preAnimation(json));
     }
 
     public static Vector3f constantVector(JsonElement element, String field) {
@@ -111,31 +111,31 @@ public final class KeyframeJson {
         }
     }
 
-    private static float last(AnimationKeyframe[] keyframes) {
+    private static float last(BoneKeyframe[] keyframes) {
         return keyframes.length == 0 ? 0.0F : keyframes[keyframes.length - 1].time();
     }
 
-    private static KeyframeAnimation.LoopType loop(JsonObject json) {
+    private static BoneTimeline.LoopType loop(JsonObject json) {
         if (!json.has("loop")) {
-            return KeyframeAnimation.LoopType.PLAY_ONCE;
+            return BoneTimeline.LoopType.PLAY_ONCE;
         }
         JsonElement loop = json.get("loop");
         if (loop.isJsonPrimitive() && loop.getAsJsonPrimitive().isBoolean()) {
-            return loop.getAsBoolean() ? KeyframeAnimation.LoopType.LOOP : KeyframeAnimation.LoopType.PLAY_ONCE;
+            return loop.getAsBoolean() ? BoneTimeline.LoopType.LOOP : BoneTimeline.LoopType.PLAY_ONCE;
         }
         if (loop.isJsonPrimitive() && "hold_on_last_frame".equals(loop.getAsString())) {
-            return KeyframeAnimation.LoopType.HOLD_ON_LAST_FRAME;
+            return BoneTimeline.LoopType.HOLD_ON_LAST_FRAME;
         }
         throw new JsonParseException("loop: expected true, false or \"hold_on_last_frame\", got " + loop);
     }
 
-    private static AnimationKeyframe[] channel(JsonObject bone, String name, String boneField, Vector3f units) {
+    private static BoneKeyframe[] channel(JsonObject bone, String name, String boneField, Vector3f units) {
         if (!bone.has(name)) {
-            return BoneAnimation.NONE;
+            return BoneChannels.NONE;
         }
         String field = boneField + "." + name;
         JsonElement element = bone.get(name);
-        List<AnimationKeyframe> keyframes = new ArrayList<>();
+        List<BoneKeyframe> keyframes = new ArrayList<>();
         if (element.isJsonObject() && !element.getAsJsonObject().has("vector")) {
             for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
                 keyframe(entry.getKey(), entry.getValue(), field + "." + entry.getKey(), units, keyframes);
@@ -143,11 +143,11 @@ public final class KeyframeJson {
         } else {
             keyframe("0", element, field, units, keyframes);
         }
-        keyframes.sort(Comparator.comparingDouble(AnimationKeyframe::time));
-        return keyframes.toArray(AnimationKeyframe[]::new);
+        keyframes.sort(Comparator.comparingDouble(BoneKeyframe::time));
+        return keyframes.toArray(BoneKeyframe[]::new);
     }
 
-    private static void keyframe(String time, JsonElement value, String field, Vector3f units, List<AnimationKeyframe> out) {
+    private static void keyframe(String time, JsonElement value, String field, Vector3f units, List<BoneKeyframe> out) {
         float timestamp;
         try {
             timestamp = Float.parseFloat(time);
@@ -195,8 +195,8 @@ public final class KeyframeJson {
         return vector(object.get("vector"), field + ".vector", units);
     }
 
-    private static AnimationKeyframe create(float time, MolangValue[] values, Easing easing, float argument) {
-        return new AnimationKeyframe(time, values[0], values[1], values[2], easing, argument);
+    private static BoneKeyframe create(float time, MolangValue[] values, Easing easing, float argument) {
+        return new BoneKeyframe(time, values[0], values[1], values[2], easing, argument);
     }
 
     private static Easing easing(JsonObject object, String field) {

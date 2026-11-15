@@ -19,6 +19,6 @@ public record SavedAnimationData(List<SavedAnimation> animations) {
     }
 
     public SavedAnimationData without(AnimationTarget target, ResourceLocation layer) {
-        return new SavedAnimationData(animations.stream().filter(animation -> !animation.sameSlot(target, layer)).toList());
+        return new SavedAnimationData(animations.stream().filter(animation -> !animation.sameKey(target, layer)).toList());
     }
 }

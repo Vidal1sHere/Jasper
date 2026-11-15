@@ -11,7 +11,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
-public final class BoneTargets {
+public final class PartPoses {
     private static final BonePose CURRENT = new BonePose();
     private static final Quaternionf ROTATION = new Quaternionf();
 

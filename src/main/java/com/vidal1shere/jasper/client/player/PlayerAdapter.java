@@ -3,9 +3,10 @@ package com.vidal1shere.jasper.client.player;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
+import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
-import com.vidal1shere.jasper.client.molang.AnimationQueries;
+import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
@@ -17,13 +18,16 @@ import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public final class ClientPlayerAnimations {
+public final class PlayerAdapter {
+    // Model parts and their locators are in pixels
+    private static final float MODEL_UNIT = 1.0F / 16.0F;
     private static final MolangContext CONTEXT = new MolangContext();
     private static final List<TrackFrame> FRAMES = new ArrayList<>();
     private static final List<Layer> FRAME_LAYERS = new ArrayList<>();
@@ -55,7 +59,7 @@ public final class ClientPlayerAnimations {
         }
         double now = entity.level().getGameTime() + partialTick;
         for (Layer layer : JasperLayers.sorted()) {
-            LayerTrack track = data.existing(AnimationTarget.MODEL, layer);
+            LayerState track = data.existing(AnimationTarget.MODEL, layer);
             if (track == null) {
                 continue;
             }
@@ -66,11 +70,11 @@ public final class ClientPlayerAnimations {
             if (FRAMES.size() <= frames) {
                 FRAMES.add(new TrackFrame());
             }
-            AnimationQueries.fill(CONTEXT, entity, track.hand(), partialTick);
+            BuiltinQueries.fill(CONTEXT, entity, track.hand(), partialTick);
             fillLook(CONTEXT, entity, partialTick);
             // Animations are written for the right arm and mirrored when the hand is on the left one
             FRAME_LAYERS.add(layer);
-            FRAMES.get(frames++).evaluate(track.track(), now, CONTEXT, AnimationQueries.isLeftArm(entity, track.hand()) ? PlayerBones.PAIRS : null);
+            FRAMES.get(frames++).evaluate(track.track(), now, CONTEXT, BuiltinQueries.isLeftArm(entity, track.hand()) ? PlayerBones.PAIRS : null);
         }
         if (frames > 0) {
             frameEntity = entity.getId();
@@ -80,7 +84,7 @@ public final class ClientPlayerAnimations {
     // Outside of a render the look queries keep the head rotation
     public static void fillLook(MolangContext context, LivingEntity entity, float partialTick) {
         if (lookEntity == entity.getId()) {
-            AnimationQueries.fillLook(context, entity, partialTick, WORLD, MODEL);
+            BuiltinQueries.fillLook(context, entity, partialTick, WORLD, MODEL);
         }
     }
 
@@ -110,6 +114,27 @@ public final class ClientPlayerAnimations {
         for (int i = 0; i < frames; i++) {
             FRAMES.get(i).transform(poseStack, bone, pivot);
         }
+    }
+
+    // At the model render, with the root bone already on the pose stack; the item bones are captured by the item layer
+    public static void captureModelLocators(LivingEntity entity, PlayerModel<?> model, PoseStack poseStack) {
+        Matrix4f root = new Matrix4f(poseStack.last().pose());
+        LocatorCapture.capture(entity, AnimationTarget.MODEL, FRAMES, frames, bone -> switch (bone) {
+            case PlayerBones.ROOT -> root;
+            case PlayerBones.TORSO -> LocatorCapture.part(root, model.body);
+            case PlayerBones.HEAD -> LocatorCapture.part(root, model.head);
+            case PlayerBones.RIGHT_ARM -> LocatorCapture.part(root, model.rightArm);
+            case PlayerBones.LEFT_ARM -> LocatorCapture.part(root, model.leftArm);
+            case PlayerBones.RIGHT_LEG -> LocatorCapture.part(root, model.rightLeg);
+            case PlayerBones.LEFT_LEG -> LocatorCapture.part(root, model.leftLeg);
+            default -> null;
+        }, PlayerBones::counterpart, MODEL_UNIT);
+    }
+
+    public static void captureItemLocators(LivingEntity entity, HumanoidArm arm, PoseStack poseStack) {
+        String bone = arm == HumanoidArm.RIGHT ? PlayerBones.RIGHT_ITEM : PlayerBones.LEFT_ITEM;
+        Matrix4f item = new Matrix4f(poseStack.last().pose());
+        LocatorCapture.capture(entity, AnimationTarget.MODEL, FRAMES, frames, name -> name.equals(bone) ? item : null, PlayerBones::counterpart, MODEL_UNIT);
     }
 
     public static void applyModel(PlayerModel<?> model) {

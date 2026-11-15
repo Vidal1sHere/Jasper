@@ -33,11 +33,11 @@ public final class JasperNetwork {
     }
 
     public static void sendStop(Entity entity, PlayingAnimation playing) {
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, new AnimationPayload(entity.getId(), playing.slot().target(), playing.slot().layer().id(), Optional.empty(), entity.level().getGameTime(), PlayOptions.DEFAULT.withHand(playing.options().hand())));
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, new AnimationPayload(entity.getId(), playing.key().target(), playing.key().layer().id(), Optional.empty(), entity.level().getGameTime(), PlayOptions.DEFAULT.withHand(playing.options().hand())));
     }
 
     private static AnimationPayload payload(Entity entity, PlayingAnimation playing) {
-        return new AnimationPayload(entity.getId(), playing.slot().target(), playing.slot().layer().id(), Optional.of(playing.animation()), playing.startTick(), playing.options());
+        return new AnimationPayload(entity.getId(), playing.key().target(), playing.key().layer().id(), Optional.of(playing.animation()), playing.startTick(), playing.options());
     }
 
     private static void handleAnimation(AnimationPayload payload, IPayloadContext context) {

@@ -1,15 +1,15 @@
 package com.vidal1shere.jasper.attachment;
 
-import com.vidal1shere.jasper.attachment.animation.AnimationSlot;
 import com.vidal1shere.jasper.attachment.animation.PlayingAnimation;
+import com.vidal1shere.jasper.layer.LayerKey;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public final class AnimationData {
-    private final Map<AnimationSlot, PlayingAnimation> playing = new HashMap<>();
+    private final Map<LayerKey, PlayingAnimation> playing = new HashMap<>();
 
-    public Map<AnimationSlot, PlayingAnimation> playing() {
+    public Map<LayerKey, PlayingAnimation> playing() {
         return playing;
     }
 }

@@ -13,7 +13,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
-public class ItemTransformAccumulator {
+public class ItemTransform {
     private float tx, ty, tz;
     private final Quaternionf rotation = new Quaternionf();
     private float sx = 1.0f, sy = 1.0f, sz = 1.0f;
@@ -50,7 +50,7 @@ public class ItemTransformAccumulator {
         this.tz += pivot.z() - moved.z();
     }
 
-    public void lerp(ItemTransformAccumulator target, float t) {
+    public void lerp(ItemTransform target, float t) {
         this.tx = Mth.lerp(t, this.tx, target.tx);
         this.ty = Mth.lerp(t, this.ty, target.ty);
         this.tz = Mth.lerp(t, this.tz, target.tz);

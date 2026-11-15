@@ -1,0 +1,58 @@
+package com.vidal1shere.jasper.client.effect;
+
+import com.vidal1shere.jasper.client.ClientAttachments;
+import com.vidal1shere.jasper.client.attachment.LocatorData;
+import com.vidal1shere.jasper.layer.AnimationTarget;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
+
+@OnlyIn(Dist.CLIENT)
+public final class EffectContext {
+    // A locator not rendered for longer than this does not say where an effect is
+    private static final long FRESH_TICKS = 2L;
+
+    private final Entity entity;
+    private final AnimationTarget target;
+    @Nullable
+    private final String locator;
+    private final boolean follow;
+    private Vec3 position;
+
+    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow) {
+        this.entity = entity;
+        this.target = target;
+        this.locator = locator;
+        this.follow = follow;
+        Vec3 located = located();
+        this.position = located != null ? located : entity.position();
+    }
+
+    public Entity entity() {
+        return entity;
+    }
+
+    public AnimationTarget target() {
+        return target;
+    }
+
+    // Sampled when the effect started; a following one moves with its locator, or with the entity while the locator is not rendered (first person, off screen), and stays where it was once the entity left
+    public Vec3 position() {
+        if (follow && !entity.isRemoved()) {
+            Vec3 located = located();
+            position = located != null ? located : entity.position();
+        }
+        return position;
+    }
+
+    @Nullable
+    private Vec3 located() {
+        if (locator == null) {
+            return null;
+        }
+        LocatorData data = entity.getExistingDataOrNull(ClientAttachments.LOCATORS);
+        return data == null ? null : data.get(target, locator, entity.level().getGameTime() - FRESH_TICKS);
+    }
+}

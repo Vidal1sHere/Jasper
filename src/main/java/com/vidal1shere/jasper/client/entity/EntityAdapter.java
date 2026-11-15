@@ -1,14 +1,16 @@
 package com.vidal1shere.jasper.client.entity;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
-import com.vidal1shere.jasper.client.animation.keyframe.KeyframeAnimation;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
+import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.layer.LayerTrack;
+import com.vidal1shere.jasper.client.attachment.layer.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
-import com.vidal1shere.jasper.client.molang.AnimationQueries;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.entity.AnimatedEntity;
 import com.vidal1shere.jasper.layer.AnimationDriver;
@@ -23,28 +25,40 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 @OnlyIn(Dist.CLIENT)
-public final class ClientEntityAnimations {
+public final class EntityAdapter {
     private static final MolangContext CONTEXT = new MolangContext();
     private static final List<TrackFrame> FRAMES = new ArrayList<>();
     private static final Set<String> BONES = new HashSet<>();
+    // Model parts and their locators are in pixels
+    private static final float MODEL_UNIT = 1.0F / 16.0F;
+
+    // The frames stay valid from setupAnim to the render of the same model, where the locators are captured
+    @Nullable
+    private static LivingEntity frameEntity;
+    @Nullable
+    private static AnimatedModel<?> frameModel;
+    private static int frameCount;
 
     public static <T extends LivingEntity & AnimatedEntity> void apply(T entity, AnimatedModel<T> model, float ageInTicks, float netHeadYaw, float headPitch) {
         LayerData data = entity.getData(ClientAttachments.LAYERS);
         float partialTick = ageInTicks - entity.tickCount;
         double now = entity.level().getGameTime() + partialTick;
         drive(entity, data, now);
-        AnimationQueries.fill(CONTEXT, entity, InteractionHand.MAIN_HAND, partialTick);
+        BuiltinQueries.fill(CONTEXT, entity, InteractionHand.MAIN_HAND, partialTick);
         int frames = 0;
         for (Layer layer : JasperLayers.sorted()) {
-            LayerTrack track = data.existing(AnimationTarget.MODEL, layer);
+            LayerState track = data.existing(AnimationTarget.MODEL, layer);
             if (track == null) {
                 continue;
             }
@@ -60,6 +74,18 @@ public final class ClientEntityAnimations {
             apply(frame, model);
         }
         look(frames, model.head(), netHeadYaw, headPitch);
+        frameEntity = entity;
+        frameModel = model;
+        frameCount = frames;
+    }
+
+    public static void captureLocators(AnimatedModel<?> model, PoseStack poseStack) {
+        if (model != frameModel || frameEntity == null) {
+            return;
+        }
+        Matrix4f root = new Matrix4f(poseStack.last().pose());
+        LocatorCapture.capture(frameEntity, AnimationTarget.MODEL, FRAMES, frameCount, bone -> model.matrix(root, bone), UnaryOperator.identity(), MODEL_UNIT);
+        frameEntity = null;
     }
 
     // Before the tracks update, so a play once that just ended hands over to the driver instead of fading to nothing
@@ -69,7 +95,7 @@ public final class ClientEntityAnimations {
             if (driver == null) {
                 continue;
             }
-            LayerTrack track = data.track(AnimationTarget.MODEL, layer, JasperAnimationLoader.ENTITY);
+            LayerState track = data.track(AnimationTarget.MODEL, layer, JasperAnimationLoader.ENTITY);
             if (track.played() != null) {
                 if (alive(track.played(), track.playedStart(), track.playedOptions(), now)) {
                     continue;
@@ -89,16 +115,21 @@ public final class ClientEntityAnimations {
         if (animation == null) {
             return false;
         }
-        KeyframeAnimation keyframes = animation.keyframes();
-        return options.loop() || keyframes.loop() != KeyframeAnimation.LoopType.PLAY_ONCE || now < start + keyframes.lengthInSeconds() * 20.0 / options.speed();
+        BoneTimeline keyframes = animation.keyframes();
+        return options.loop() || keyframes.loop() != BoneTimeline.LoopType.PLAY_ONCE || now < start + keyframes.lengthInSeconds() * 20.0 / options.speed();
     }
 
     private static void apply(TrackFrame frame, AnimatedModel<?> model) {
         BONES.clear();
         for (int i = 0; i < frame.size(); i++) {
             JasperAnimation animation = frame.animation(i);
-            if (animation != null) {
-                BONES.addAll(animation.keyframes().bones().keySet());
+            if (animation == null) {
+                continue;
+            }
+            for (String bone : animation.keyframes().bones().keySet()) {
+                if (!animation.locators().containsKey(bone)) {
+                    BONES.add(bone);
+                }
             }
         }
         for (String bone : BONES) {

@@ -1,6 +1,7 @@
 package com.vidal1shere.jasper.client.loading;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Sets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -8,9 +9,12 @@ import com.mojang.logging.LogUtils;
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
-import com.vidal1shere.jasper.client.animation.keyframe.KeyframeAnimation;
-import com.vidal1shere.jasper.client.item.ClientItemAnimations;
+import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
+import com.vidal1shere.jasper.client.animation.locator.Locator;
+import com.vidal1shere.jasper.client.effect.EffectTimeline;
+import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.player.PlayerBones;
+import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -31,6 +35,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -45,8 +50,9 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private static final KeyframeJson.Units MODEL_UNITS = new KeyframeJson.Units(new Vector3f(1.0F, -1.0F, 1.0F), new Vector3f(Mth.DEG_TO_RAD));
     private static final Set<String> POSE_FIELDS = Set.of("blend_mode", "bone_modes", "look");
     private static final Set<String> LOOK_FIELDS = Set.of("pitch", "yaw");
+    private static final Set<String> LOCATOR_FIELDS = Set.of("parent", "position");
 
-    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", Set.of(ClientItemAnimations.BONE), PIXEL_UNITS, Set.of("pivot"));
+    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", Set.of(ItemAdapter.BONE), PIXEL_UNITS, Set.of("pivot"));
     public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, MODEL_UNITS, POSE_FIELDS);
     public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, MODEL_UNITS, POSE_FIELDS);
 
@@ -89,22 +95,67 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
         return supplier == null ? null : supplier.get();
     }
 
-    private JasperAnimation parse(JsonObject json) {
-        KeyframeAnimation keyframes = KeyframeJson.parse(json, bones, units, extraFields);
+    private JasperAnimation parse(JsonObject json, Map<String, Locator> fileLocators) {
+        Map<String, Locator> locators = json.has("locators") ? locators(json.get("locators"), fileLocators) : new LinkedHashMap<>(fileLocators);
+        // Locators are animated like bones, under their own names
+        Set<String> animated = bones == null ? null : Sets.union(bones, locators.keySet()).immutableCopy();
+        BoneTimeline keyframes = KeyframeJson.parse(json, animated, units, extraFields);
         BlendMode mode = json.has("blend_mode") ? mode(GsonHelper.getAsString(json, "blend_mode"), "blend_mode") : BlendMode.REPLACE;
         Map<String, BlendMode> boneModes = new HashMap<>();
         if (json.has("bone_modes")) {
             for (Map.Entry<String, JsonElement> entry : GsonHelper.getAsJsonObject(json, "bone_modes").entrySet()) {
                 String field = "bone_modes." + entry.getKey();
-                if (bones != null && !bones.contains(entry.getKey())) {
-                    throw new JsonParseException(field + ": unknown bone, expected one of " + bones);
+                if (animated != null && !animated.contains(entry.getKey())) {
+                    throw new JsonParseException(field + ": unknown bone, expected one of " + animated);
                 }
                 boneModes.put(entry.getKey(), mode(GsonHelper.convertToString(entry.getValue(), field), field));
             }
         }
         JasperAnimation.Look look = json.has("look") ? look(GsonHelper.getAsJsonObject(json, "look")) : JasperAnimation.Look.NONE;
         Vector3f pivot = json.has("pivot") ? KeyframeJson.constantVector(json.get("pivot"), "pivot").mul(PIXEL) : JasperAnimation.NO_PIVOT;
-        return new JasperAnimation(keyframes, mode, Map.copyOf(boneModes), look, pivot, false);
+        EffectTimeline effects = json.has("effects") ? EffectJson.parse(json.get("effects"), keyframes.lengthInSeconds(), locators, bones) : EffectTimeline.EMPTY;
+        checkParents(locators);
+        return new JasperAnimation(keyframes, mode, Map.copyOf(boneModes), look, pivot, false, Map.copyOf(locators), effects);
+    }
+
+    // Overrides the inherited locators of the same name
+    private Map<String, Locator> locators(JsonElement json, Map<String, Locator> inherited) {
+        Map<String, Locator> locators = new LinkedHashMap<>(inherited);
+        for (Map.Entry<String, JsonElement> entry : GsonHelper.convertToJsonObject(json, "locators").entrySet()) {
+            String name = entry.getKey();
+            String field = "locators." + name;
+            if (bones != null && bones.contains(name)) {
+                throw new JsonParseException(field + ": a locator cannot have the name of a bone");
+            }
+            JsonObject locator = GsonHelper.convertToJsonObject(entry.getValue(), field);
+            for (String key : locator.keySet()) {
+                if (!LOCATOR_FIELDS.contains(key)) {
+                    throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + LOCATOR_FIELDS);
+                }
+            }
+            Vector3f position = locator.has("position") ? KeyframeJson.constantVector(locator.get("position"), field + ".position").mul(units.position()) : new Vector3f();
+            locators.put(name, new Locator(GsonHelper.getAsString(locator, "parent"), PartPose.offset(position.x, position.y, position.z), true));
+        }
+        return locators;
+    }
+
+    private void checkParents(Map<String, Locator> locators) {
+        for (Map.Entry<String, Locator> entry : locators.entrySet()) {
+            String name = entry.getKey();
+            String parent = entry.getValue().parent();
+            if (parent.equals(name)) {
+                continue;
+            }
+            if (!locators.containsKey(parent) && bones != null && !bones.contains(parent)) {
+                throw new JsonParseException("locators." + name + ".parent: unknown bone or locator '" + parent + "', expected one of " + Sets.union(bones, locators.keySet()));
+            }
+            for (int depth = 0; locators.containsKey(parent) && !locators.get(parent).parent().equals(parent); depth++) {
+                if (depth >= locators.size()) {
+                    throw new JsonParseException("locators." + name + ".parent: the locator parents make a cycle");
+                }
+                parent = locators.get(parent).parent();
+            }
+        }
     }
 
     private static BlendMode mode(String name, String field) {
@@ -133,6 +184,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
             try (Reader reader = entry.getValue().openAsReader()) {
                 JsonObject root = GsonHelper.parse(reader);
                 KeyframeJson.checkRoot(root);
+                Map<String, Locator> fileLocators = root.has("locators") ? locators(root.get("locators"), Map.of()) : Map.of();
                 for (Map.Entry<String, JsonElement> animation : GsonHelper.getAsJsonObject(root, "animations").entrySet()) {
                     ResourceLocation id = ResourceLocation.tryBuild(file.getNamespace(), path + "/" + animation.getKey());
                     if (id == null) {
@@ -140,7 +192,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
                         continue;
                     }
                     try {
-                        result.put(id, parse(GsonHelper.convertToJsonObject(animation.getValue(), animation.getKey())));
+                        result.put(id, parse(GsonHelper.convertToJsonObject(animation.getValue(), animation.getKey()), fileLocators));
                     } catch (JsonParseException | IllegalArgumentException e) {
                         LOGGER.error("Failed to load {} animation {} from {}: {}", kind, id, file, e.getMessage());
                     }
