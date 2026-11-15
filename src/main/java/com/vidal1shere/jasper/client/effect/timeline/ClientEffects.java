@@ -4,7 +4,6 @@ import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
-import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.attachment.EffectData;
 import com.vidal1shere.jasper.client.attachment.LayerData;
 import com.vidal1shere.jasper.client.attachment.effect.BoundEffect;
@@ -109,8 +108,7 @@ public final class ClientEffects {
         if (animation == null || animation.effects().isEmpty()) {
             return;
         }
-        BoneTimeline keyframes = animation.keyframes();
-        animation.effects().fire(from, to, keyframes.lengthInSeconds(), entry.cycles(keyframes), (effect, at) -> {
+        animation.effects().fire(from, to, animation.length(), entry.cycles(animation), (effect, at) -> {
             if (visible || !effect.effect().visual()) {
                 start(entity, key, entry, effect, at);
             }

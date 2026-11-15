@@ -1,7 +1,6 @@
 package com.vidal1shere.jasper.client.animation;
 
 import com.vidal1shere.jasper.client.animation.keyframe.BoneSampler;
-import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.client.molang.MolangContext;
@@ -25,17 +24,17 @@ public final class AnimationTrack {
             return (float) Math.max(0.0, (now - startTick) / 20.0 * speed);
         }
 
-        public float seconds(double now, BoneTimeline animation) {
+        public float seconds(double now, JasperAnimation animation) {
             float seconds = elapsed(now);
-            return loops(animation) && animation.lengthInSeconds() > 0.0F ? seconds % animation.lengthInSeconds() : seconds;
+            return loops(animation) && animation.length() > 0.0F ? seconds % animation.length() : seconds;
         }
 
-        public boolean loops(BoneTimeline animation) {
-            return loop && animation.loop() == BoneTimeline.LoopType.PLAY_ONCE;
+        public boolean loops(JasperAnimation animation) {
+            return loop && animation.loop() == JasperAnimation.LoopType.PLAY_ONCE;
         }
 
-        public boolean cycles(BoneTimeline animation) {
-            return animation.loop() == BoneTimeline.LoopType.LOOP || loops(animation);
+        public boolean cycles(JasperAnimation animation) {
+            return animation.loop() == JasperAnimation.LoopType.LOOP || loops(animation);
         }
     }
 
@@ -53,17 +52,17 @@ public final class AnimationTrack {
 
     public void set(@Nullable ResourceLocation id, long startTick, float speed, boolean loop) {
         JasperAnimation fading = id == null ? animation(fades.size() - 1) : loader.get(id);
-        push(new Entry(id, startTick, speed, loop), startTick, fading == null ? 0.0F : fading.keyframes().blendTicks());
+        push(new Entry(id, startTick, speed, loop), startTick, fading == null ? 0.0F : fading.blendTicks());
     }
 
     // Ends a finished play once animation with an empty fade at its end, then drops the fades hidden by a fully faded one
     public void update(double now) {
         Fade top = fades.getLast();
         JasperAnimation animation = animation(fades.size() - 1);
-        if (animation != null && animation.keyframes().loop() == BoneTimeline.LoopType.PLAY_ONCE && !top.entry().loops(animation.keyframes())) {
-            double end = top.entry().startTick() + animation.keyframes().lengthInSeconds() * 20.0 / top.entry().speed();
+        if (animation != null && animation.loop() == JasperAnimation.LoopType.PLAY_ONCE && !top.entry().loops(animation)) {
+            double end = top.entry().startTick() + animation.length() * 20.0 / top.entry().speed();
             if (now >= end) {
-                push(new Entry(null, (long) end, 1.0F, false), end, animation.keyframes().blendTicks());
+                push(new Entry(null, (long) end, 1.0F, false), end, animation.blendTicks());
             }
         }
         int hidden = 0;
@@ -124,7 +123,7 @@ public final class AnimationTrack {
         pose.reset();
         JasperAnimation animation = animation(i);
         if (animation != null) {
-            BoneSampler.evaluate(animation.keyframes(), fades.get(i).entry().seconds(now, animation.keyframes()), context, pose);
+            BoneSampler.evaluate(animation, fades.get(i).entry().seconds(now, animation), context, pose);
         }
         return animation;
     }

@@ -54,7 +54,6 @@ public final class KeyframeJson {
         }
         JsonObject bonesJson = GsonHelper.getAsJsonObject(json, "bones");
         Map<String, BoneChannels> parsed = new LinkedHashMap<>();
-        float lastKeyframe = 0.0F;
         for (Map.Entry<String, JsonElement> bone : bonesJson.entrySet()) {
             String name = bone.getKey();
             String field = "bones." + name;
@@ -72,12 +71,9 @@ public final class KeyframeJson {
                     channel(channels, "rotation", field, units.rotation()),
                     channel(channels, "scale", field, new Vector3f(1.0F))
             );
-            lastKeyframe = Math.max(lastKeyframe, Math.max(last(animation.position()), Math.max(last(animation.rotation()), last(animation.scale()))));
             parsed.put(name, animation);
         }
-        float length = json.has("animation_length") ? GsonHelper.getAsFloat(json, "animation_length") : lastKeyframe;
-        float blendTicks = GsonHelper.getAsFloat(json, "blend_ticks", BoneTimeline.DEFAULT_BLEND_TICKS);
-        return new BoneTimeline(length, loop(json), blendTicks, Map.copyOf(parsed), preAnimation(json));
+        return new BoneTimeline(Map.copyOf(parsed), preAnimation(json));
     }
 
     public static Vector3f constantVector(JsonElement element, String field) {
@@ -109,24 +105,6 @@ public final class KeyframeJson {
         } catch (IllegalArgumentException e) {
             throw new JsonParseException("pre_animation: " + e.getMessage());
         }
-    }
-
-    private static float last(BoneKeyframe[] keyframes) {
-        return keyframes.length == 0 ? 0.0F : keyframes[keyframes.length - 1].time();
-    }
-
-    private static BoneTimeline.LoopType loop(JsonObject json) {
-        if (!json.has("loop")) {
-            return BoneTimeline.LoopType.PLAY_ONCE;
-        }
-        JsonElement loop = json.get("loop");
-        if (loop.isJsonPrimitive() && loop.getAsJsonPrimitive().isBoolean()) {
-            return loop.getAsBoolean() ? BoneTimeline.LoopType.LOOP : BoneTimeline.LoopType.PLAY_ONCE;
-        }
-        if (loop.isJsonPrimitive() && "hold_on_last_frame".equals(loop.getAsString())) {
-            return BoneTimeline.LoopType.HOLD_ON_LAST_FRAME;
-        }
-        throw new JsonParseException("loop: expected true, false or \"hold_on_last_frame\", got " + loop);
     }
 
     private static BoneKeyframe[] channel(JsonObject bone, String name, String boneField, Vector3f units) {

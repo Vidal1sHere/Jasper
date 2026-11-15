@@ -19,11 +19,11 @@ public final class VanillaAnimations {
     }
 
     public static JasperAnimation convert(AnimationDefinition definition, JasperAnimation.Look look) {
-        return convert(definition, definition.looping() ? BoneTimeline.LoopType.LOOP : BoneTimeline.LoopType.PLAY_ONCE, look);
+        return convert(definition, definition.looping() ? JasperAnimation.LoopType.LOOP : JasperAnimation.LoopType.PLAY_ONCE, look);
     }
 
-    public static JasperAnimation convert(AnimationDefinition definition, BoneTimeline.LoopType loop, JasperAnimation.Look look) {
-        BoneTimeline.Builder builder = BoneTimeline.builder(definition.lengthInSeconds()).loop(loop);
+    public static JasperAnimation convert(AnimationDefinition definition, JasperAnimation.LoopType loop, JasperAnimation.Look look) {
+        BoneTimeline.Builder builder = BoneTimeline.builder();
         for (Map.Entry<String, List<AnimationChannel>> bone : definition.boneAnimations().entrySet()) {
             for (AnimationChannel channel : bone.getValue()) {
                 AnimationChannel.Target target = channel.target();
@@ -42,7 +42,7 @@ public final class VanillaAnimations {
                 }
             }
         }
-        return new JasperAnimation(builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT, false);
+        return new JasperAnimation(definition.lengthInSeconds(), loop, JasperAnimation.DEFAULT_BLEND_TICKS, builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT, false);
     }
 
     private static BoneKeyframe keyframe(Keyframe keyframe, float offset) {

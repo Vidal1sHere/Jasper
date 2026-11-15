@@ -5,7 +5,6 @@ import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
-import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.attachment.LayerData;
 import com.vidal1shere.jasper.client.attachment.layer.LayerState;
@@ -115,8 +114,7 @@ public final class EntityAdapter {
         if (animation == null) {
             return false;
         }
-        BoneTimeline keyframes = animation.keyframes();
-        return options.loop() || keyframes.loop() != BoneTimeline.LoopType.PLAY_ONCE || now < start + keyframes.lengthInSeconds() * 20.0 / options.speed();
+        return options.loop() || animation.loop() != JasperAnimation.LoopType.PLAY_ONCE || now < start + animation.length() * 20.0 / options.speed();
     }
 
     private static void apply(TrackFrame frame, AnimatedModel<?> model) {

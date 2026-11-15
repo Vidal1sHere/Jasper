@@ -100,6 +100,8 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
         // Locators are animated like bones, under their own names
         Set<String> animated = bones == null ? null : Sets.union(bones, locators.keySet()).immutableCopy();
         BoneTimeline keyframes = KeyframeJson.parse(json, animated, units, extraFields);
+        float length = json.has("animation_length") ? GsonHelper.getAsFloat(json, "animation_length") : keyframes.lastKeyframe();
+        float blendTicks = GsonHelper.getAsFloat(json, "blend_ticks", JasperAnimation.DEFAULT_BLEND_TICKS);
         BlendMode mode = json.has("blend_mode") ? mode(GsonHelper.getAsString(json, "blend_mode"), "blend_mode") : BlendMode.REPLACE;
         Map<String, BlendMode> boneModes = new HashMap<>();
         if (json.has("bone_modes")) {
@@ -113,9 +115,23 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
         }
         JasperAnimation.Look look = json.has("look") ? look(GsonHelper.getAsJsonObject(json, "look")) : JasperAnimation.Look.NONE;
         Vector3f pivot = json.has("pivot") ? KeyframeJson.constantVector(json.get("pivot"), "pivot").mul(PIXEL) : JasperAnimation.NO_PIVOT;
-        EffectTimeline effects = json.has("effects") ? EffectJson.parse(json.get("effects"), keyframes.lengthInSeconds(), locators, bones) : EffectTimeline.EMPTY;
+        EffectTimeline effects = json.has("effects") ? EffectJson.parse(json.get("effects"), length, locators, bones) : EffectTimeline.EMPTY;
         checkParents(locators);
-        return new JasperAnimation(keyframes, mode, Map.copyOf(boneModes), look, pivot, false, Map.copyOf(locators), effects);
+        return new JasperAnimation(length, loop(json), blendTicks, keyframes, mode, Map.copyOf(boneModes), look, pivot, false, Map.copyOf(locators), effects);
+    }
+
+    private static JasperAnimation.LoopType loop(JsonObject json) {
+        if (!json.has("loop")) {
+            return JasperAnimation.LoopType.PLAY_ONCE;
+        }
+        JsonElement loop = json.get("loop");
+        if (loop.isJsonPrimitive() && loop.getAsJsonPrimitive().isBoolean()) {
+            return loop.getAsBoolean() ? JasperAnimation.LoopType.LOOP : JasperAnimation.LoopType.PLAY_ONCE;
+        }
+        if (loop.isJsonPrimitive() && "hold_on_last_frame".equals(loop.getAsString())) {
+            return JasperAnimation.LoopType.HOLD_ON_LAST_FRAME;
+        }
+        throw new JsonParseException("loop: expected true, false or \"hold_on_last_frame\", got " + loop);
     }
 
     // Overrides the inherited locators of the same name

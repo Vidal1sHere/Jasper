@@ -11,59 +11,27 @@ import java.util.List;
 import java.util.Map;
 
 @OnlyIn(Dist.CLIENT)
-public record BoneTimeline(float lengthInSeconds, LoopType loop, float blendTicks, Map<String, BoneChannels> bones, MolangValue preAnimation) {
-    public static final float DEFAULT_BLEND_TICKS = 2.0F;
-
-    public enum LoopType {
-        PLAY_ONCE,
-        LOOP,
-        HOLD_ON_LAST_FRAME
+public record BoneTimeline(Map<String, BoneChannels> bones, MolangValue preAnimation) {
+    public float lastKeyframe() {
+        float last = 0.0F;
+        for (BoneChannels bone : bones.values()) {
+            last = Math.max(last, Math.max(last(bone.position()), Math.max(last(bone.rotation()), last(bone.scale()))));
+        }
+        return last;
     }
 
-    public boolean finished(float elapsedSeconds) {
-        return loop == LoopType.PLAY_ONCE && elapsedSeconds >= lengthInSeconds;
+    private static float last(BoneKeyframe[] keyframes) {
+        return keyframes.length == 0 ? 0.0F : keyframes[keyframes.length - 1].time();
     }
 
-    public float localTime(float elapsedSeconds) {
-        return switch (loop) {
-            case LOOP -> lengthInSeconds > 0.0F ? elapsedSeconds % lengthInSeconds : 0.0F;
-            case HOLD_ON_LAST_FRAME, PLAY_ONCE -> Math.min(elapsedSeconds, lengthInSeconds);
-        };
-    }
-
-    public static Builder builder(float lengthInSeconds) {
-        return new Builder(lengthInSeconds);
+    public static Builder builder() {
+        return new Builder();
     }
 
     @OnlyIn(Dist.CLIENT)
     public static class Builder {
-        private final float length;
         private final Map<String, List<BoneKeyframe>[]> bones = new LinkedHashMap<>();
-        private LoopType loop = LoopType.PLAY_ONCE;
-        private float blendTicks = DEFAULT_BLEND_TICKS;
         private MolangValue preAnimation = MolangValue.ZERO;
-
-        private Builder(float length) {
-            this.length = length;
-        }
-
-        public Builder loop(LoopType loop) {
-            this.loop = loop;
-            return this;
-        }
-
-        public Builder looping() {
-            return loop(LoopType.LOOP);
-        }
-
-        public Builder holding() {
-            return loop(LoopType.HOLD_ON_LAST_FRAME);
-        }
-
-        public Builder blendTicks(float blendTicks) {
-            this.blendTicks = blendTicks;
-            return this;
-        }
 
         public Builder preAnimation(MolangValue preAnimation) {
             this.preAnimation = preAnimation;
@@ -92,7 +60,7 @@ public record BoneTimeline(float lengthInSeconds, LoopType loop, float blendTick
         public BoneTimeline build() {
             Map<String, BoneChannels> built = new LinkedHashMap<>();
             bones.forEach((bone, channels) -> built.put(bone, new BoneChannels(sorted(channels[0]), sorted(channels[1]), sorted(channels[2]))));
-            return new BoneTimeline(length, loop, blendTicks, Map.copyOf(built), preAnimation);
+            return new BoneTimeline(Map.copyOf(built), preAnimation);
         }
 
         private static BoneKeyframe[] sorted(List<BoneKeyframe> keyframes) {

@@ -1,5 +1,6 @@
 package com.vidal1shere.jasper.client.animation.keyframe;
 
+import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
 import com.vidal1shere.jasper.client.molang.MolangContext;
@@ -18,13 +19,13 @@ public final class BoneSampler {
     private static final Vector3f P2 = new Vector3f();
     private static final Vector3f P3 = new Vector3f();
 
-    public static void evaluate(BoneTimeline animation, float elapsedSeconds, MolangContext context, AnimationPose pose) {
+    public static void evaluate(JasperAnimation animation, float elapsedSeconds, MolangContext context, AnimationPose pose) {
         pose.reset();
         context.resetVariables();
         context.set(MolangQuery.ANIM_TIME, elapsedSeconds);
-        animation.preAnimation().get(context);
+        animation.keyframes().preAnimation().get(context);
         float time = animation.localTime(elapsedSeconds);
-        for (Map.Entry<String, BoneChannels> entry : animation.bones().entrySet()) {
+        for (Map.Entry<String, BoneChannels> entry : animation.keyframes().bones().entrySet()) {
             BoneChannels bone = entry.getValue();
             BonePose target = pose.get(entry.getKey());
             if (bone.position().length > 0) {
