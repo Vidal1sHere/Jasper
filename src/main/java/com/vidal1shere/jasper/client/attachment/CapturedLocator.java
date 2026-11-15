@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.attachment.locator;
+package com.vidal1shere.jasper.client.attachment;
 
 import net.minecraft.world.phys.Vec3;
 

@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.client.attachment;
 
-import com.vidal1shere.jasper.client.attachment.locator.CapturedLocator;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;

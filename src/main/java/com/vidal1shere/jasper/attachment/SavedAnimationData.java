@@ -1,7 +1,6 @@
 package com.vidal1shere.jasper.attachment;
 
 import com.mojang.serialization.Codec;
-import com.vidal1shere.jasper.attachment.savedanimation.SavedAnimation;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.resources.ResourceLocation;
 

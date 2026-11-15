@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.attachment;
 
-import com.vidal1shere.jasper.attachment.animation.PlayingAnimation;
 import com.vidal1shere.jasper.layer.LayerKey;
 
 import java.util.HashMap;

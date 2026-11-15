@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.attachment.effect;
+package com.vidal1shere.jasper.client.attachment;
 
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.effect.EffectContext;

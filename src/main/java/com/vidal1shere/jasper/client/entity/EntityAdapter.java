@@ -6,8 +6,8 @@ import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
-import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
@@ -50,7 +50,7 @@ public final class EntityAdapter {
     private static int frameCount;
 
     public static <T extends LivingEntity & AnimatedEntity> void apply(T entity, AnimatedModel<T> model, float ageInTicks, float netHeadYaw, float headPitch) {
-        LayerData data = entity.getData(ClientAttachments.LAYERS);
+        ClientAnimationData data = entity.getData(ClientAttachments.ANIMATIONS);
         float partialTick = ageInTicks - entity.tickCount;
         double now = entity.level().getGameTime() + partialTick;
         drive(entity, data, now);
@@ -88,7 +88,7 @@ public final class EntityAdapter {
     }
 
     // Before the tracks update, so a play once that just ended hands over to the driver instead of fading to nothing
-    private static <T extends LivingEntity & AnimatedEntity> void drive(T entity, LayerData data, double now) {
+    private static <T extends LivingEntity & AnimatedEntity> void drive(T entity, ClientAnimationData data, double now) {
         for (Layer layer : JasperLayers.sorted()) {
             AnimationDriver driver = entity.driver(layer, AnimationTarget.MODEL);
             if (driver == null) {

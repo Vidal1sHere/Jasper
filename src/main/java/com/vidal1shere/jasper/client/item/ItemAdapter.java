@@ -8,8 +8,8 @@ import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.animation.pose.AnimationPose;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
-import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.layer.AnimationTarget;
@@ -46,7 +46,7 @@ public final class ItemAdapter {
     }
 
     public static boolean isActive(LivingEntity entity, InteractionHand hand, float partialTick) {
-        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
+        ClientAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
         if (data == null || isSuppressed(entity)) {
             return false;
         }
@@ -60,7 +60,7 @@ public final class ItemAdapter {
     }
 
     public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, MultiBufferSource buffer, float partialTick) {
-        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
+        ClientAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
         if (data == null || isSuppressed(entity)) {
             return;
         }

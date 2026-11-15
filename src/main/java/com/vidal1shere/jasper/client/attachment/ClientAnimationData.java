@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.client.attachment;
 
-import com.vidal1shere.jasper.client.attachment.layer.LayerState;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.Layer;
@@ -11,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-public final class LayerData {
+public final class ClientAnimationData {
     private final Map<LayerKey, LayerState> tracks = new HashMap<>();
 
     public LayerState track(AnimationTarget target, Layer layer, JasperAnimationLoader loader) {

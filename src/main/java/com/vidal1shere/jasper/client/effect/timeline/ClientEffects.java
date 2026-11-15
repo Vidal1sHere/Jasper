@@ -4,10 +4,10 @@ import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
+import com.vidal1shere.jasper.client.attachment.BoundEffect;
+import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.EffectData;
-import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.effect.BoundEffect;
-import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
@@ -45,7 +45,7 @@ public final class ClientEffects {
         }
         long now = minecraft.level.getGameTime();
         for (Entity entity : minecraft.level.entitiesForRendering()) {
-            LayerData layers = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
+            ClientAnimationData layers = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
             if (layers != null) {
                 layers.forEach((key, track) -> fire(entity, key, track, now));
             }
@@ -126,7 +126,7 @@ public final class ClientEffects {
         entity.getData(ClientAttachments.EFFECTS).running().add(new BoundEffect(key, entry, instance, context, until, effect.persist()));
     }
 
-    private static void tick(@Nullable LayerData layers, EffectData effects, long now) {
+    private static void tick(@Nullable ClientAnimationData layers, EffectData effects, long now) {
         effects.running().removeIf(running -> {
             LayerState layer = layers == null ? null : layers.existing(running.key().target(), running.key().layer());
             boolean playing = layer != null && layer.track().entry(layer.track().size() - 1) == running.entry();

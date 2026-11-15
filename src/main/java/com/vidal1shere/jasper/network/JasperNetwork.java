@@ -1,6 +1,6 @@
 package com.vidal1shere.jasper.network;
 
-import com.vidal1shere.jasper.attachment.animation.PlayingAnimation;
+import com.vidal1shere.jasper.attachment.PlayingAnimation;
 import com.vidal1shere.jasper.client.ClientAnimations;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;

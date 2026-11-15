@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.client.attachment.layer;
+package com.vidal1shere.jasper.client.attachment;
 
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;

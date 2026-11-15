@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.client.attachment;
 
-import com.vidal1shere.jasper.client.attachment.effect.BoundEffect;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,8 +1,8 @@
 package com.vidal1shere.jasper;
 
 import com.vidal1shere.jasper.attachment.AnimationData;
-import com.vidal1shere.jasper.attachment.animation.PlayingAnimation;
-import com.vidal1shere.jasper.attachment.savedanimation.SavedAnimation;
+import com.vidal1shere.jasper.attachment.PlayingAnimation;
+import com.vidal1shere.jasper.attachment.SavedAnimation;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.EndCondition;
 import com.vidal1shere.jasper.layer.JasperLayers;

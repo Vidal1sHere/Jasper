@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.attachment.savedanimation;
+package com.vidal1shere.jasper.attachment;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;

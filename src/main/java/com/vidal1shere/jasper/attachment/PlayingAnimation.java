@@ -1,4 +1,4 @@
-package com.vidal1shere.jasper.attachment.animation;
+package com.vidal1shere.jasper.attachment;
 
 import com.vidal1shere.jasper.layer.LayerKey;
 import com.vidal1shere.jasper.layer.PlayOptions;

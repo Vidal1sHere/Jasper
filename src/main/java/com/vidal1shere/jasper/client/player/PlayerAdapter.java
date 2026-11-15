@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
-import com.vidal1shere.jasper.client.attachment.LayerData;
-import com.vidal1shere.jasper.client.attachment.layer.LayerState;
+import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
+import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.layer.AnimationTarget;
@@ -53,7 +53,7 @@ public final class PlayerAdapter {
         FRAME_LAYERS.clear();
         MODEL.set(poseStack.last().normal());
         lookEntity = entity.getId();
-        LayerData data = entity.getExistingDataOrNull(ClientAttachments.LAYERS);
+        ClientAnimationData data = entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS);
         if (data == null) {
             return;
         }
