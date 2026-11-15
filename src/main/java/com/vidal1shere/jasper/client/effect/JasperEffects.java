@@ -2,6 +2,7 @@ package com.vidal1shere.jasper.client.effect;
 
 import com.mojang.serialization.MapCodec;
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.effect.particle.ParticleEffect;
 import com.vidal1shere.jasper.client.effect.sound.SoundEffect;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -18,6 +19,7 @@ public final class JasperEffects {
     private static final Map<ResourceLocation, MapCodec<? extends AnimationEffect>> TYPES = new ConcurrentHashMap<>();
 
     public static final ResourceLocation SOUND = register(Jasper.id("sound"), SoundEffect.CODEC);
+    public static final ResourceLocation PARTICLE = register(Jasper.id("particle"), ParticleEffect.CODEC);
 
     public static ResourceLocation register(ResourceLocation id, MapCodec<? extends AnimationEffect> codec) {
         if (TYPES.putIfAbsent(id, codec) != null) {

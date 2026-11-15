@@ -19,13 +19,15 @@ public final class EffectContext {
     @Nullable
     private final String locator;
     private final boolean follow;
+    private final boolean persist;
     private Vec3 position;
 
-    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow) {
+    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow, boolean persist) {
         this.entity = entity;
         this.target = target;
         this.locator = locator;
         this.follow = follow;
+        this.persist = persist;
         Vec3 located = located();
         this.position = located != null ? located : entity.position();
     }
@@ -36,6 +38,14 @@ public final class EffectContext {
 
     public AnimationTarget target() {
         return target;
+    }
+
+    public boolean follow() {
+        return follow;
+    }
+
+    public boolean persist() {
+        return persist;
     }
 
     // Sampled when the effect started; a following one moves with its locator, or with the entity while the locator is not rendered (first person, off screen), and stays where it was once the entity left
