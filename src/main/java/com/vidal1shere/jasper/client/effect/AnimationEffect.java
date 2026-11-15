@@ -20,4 +20,8 @@ public interface AnimationEffect {
     default List<String> locators() {
         return List.of();
     }
+
+    default List<String> bones() {
+        return List.of();
+    }
 }

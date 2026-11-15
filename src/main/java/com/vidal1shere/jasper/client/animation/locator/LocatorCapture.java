@@ -45,6 +45,10 @@ public final class LocatorCapture {
         return renderFrame;
     }
 
+    public static boolean inLevel() {
+        return inLevel;
+    }
+
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {

@@ -5,7 +5,9 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
+import com.vidal1shere.jasper.client.effect.Blend;
 import com.vidal1shere.jasper.client.effect.EffectContext;
+import com.vidal1shere.jasper.client.effect.Light;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -36,7 +38,7 @@ import java.util.function.BiFunction;
 public final class Trails {
     private static final RenderType ADDITIVE = renderType("jasper_trail_additive", RenderStateShard.LIGHTNING_TRANSPARENCY, null);
     private static final RenderType TRANSLUCENT = renderType("jasper_trail_translucent", RenderStateShard.TRANSLUCENT_TRANSPARENCY, null);
-    private static final BiFunction<ResourceLocation, TrailEffect.Blend, RenderType> TEXTURED = Util.memoize((texture, blend) -> renderType(
+    private static final BiFunction<ResourceLocation, Blend, RenderType> TEXTURED = Util.memoize((texture, blend) -> renderType(
             "jasper_trail_" + blend.getSerializedName() + "_" + texture.toDebugFileName(), transparency(blend), texture));
 
     private static final List<PlayingTrail> ACTIVE = new ArrayList<>();
@@ -204,7 +206,7 @@ public final class Trails {
         if (shrink > 0.0F) {
             point = point.lerp(center(sample.points()), shrink);
         }
-        int light = effect.light() == TrailEffect.Light.FULL ? LightTexture.FULL_BRIGHT : LevelRenderer.getLightColor(level, BlockPos.containing(point));
+        int light = effect.light() == Light.FULL ? LightTexture.FULL_BRIGHT : LevelRenderer.getLightColor(level, BlockPos.containing(point));
         consumer.addVertex((float) (point.x - camera.x), (float) (point.y - camera.y), (float) (point.z - camera.z))
                 .setColor(effect.argb(sample.age(), index));
         if (textured) {
@@ -229,11 +231,11 @@ public final class Trails {
         if (effect.texture().isPresent()) {
             return TEXTURED.apply(effect.texture().get(), effect.blend());
         }
-        return effect.blend() == TrailEffect.Blend.ADDITIVE ? ADDITIVE : TRANSLUCENT;
+        return effect.blend() == Blend.ADDITIVE ? ADDITIVE : TRANSLUCENT;
     }
 
-    private static RenderStateShard.TransparencyStateShard transparency(TrailEffect.Blend blend) {
-        return blend == TrailEffect.Blend.ADDITIVE ? RenderStateShard.LIGHTNING_TRANSPARENCY : RenderStateShard.TRANSLUCENT_TRANSPARENCY;
+    private static RenderStateShard.TransparencyStateShard transparency(Blend blend) {
+        return blend == Blend.ADDITIVE ? RenderStateShard.LIGHTNING_TRANSPARENCY : RenderStateShard.TRANSLUCENT_TRANSPARENCY;
     }
 
     // No culling, so the ribbon shows from both sides, and no depth write, so trails do not hide each other

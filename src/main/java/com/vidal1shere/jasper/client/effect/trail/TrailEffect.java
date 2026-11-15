@@ -7,7 +7,9 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.animation.keyframe.Easing;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
+import com.vidal1shere.jasper.client.effect.Blend;
 import com.vidal1shere.jasper.client.effect.EffectContext;
+import com.vidal1shere.jasper.client.effect.Light;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
@@ -78,42 +80,6 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
                 either -> either.map(List::of, list -> list),
                 list -> list.size() == 1 ? Either.left(list.getFirst()) : Either.right(list)
         );
-    }
-
-    public enum Blend implements StringRepresentable {
-        ADDITIVE("additive"),
-        TRANSLUCENT("translucent");
-
-        public static final Codec<Blend> CODEC = StringRepresentable.fromEnum(Blend::values);
-
-        private final String name;
-
-        Blend(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
-    }
-
-    public enum Light implements StringRepresentable {
-        FULL("full"),
-        WORLD("world");
-
-        public static final Codec<Light> CODEC = StringRepresentable.fromEnum(Light::values);
-
-        private final String name;
-
-        Light(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
     }
 
     // Entity rings follow the entity position, not its rotation

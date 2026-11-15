@@ -80,6 +80,11 @@ public final class EffectJson {
         for (String read : effect.locators()) {
             locator(read, field + ".locators", locators, bones);
         }
+        for (String bone : effect.bones()) {
+            if (bones != null && !bones.contains(bone)) {
+                throw new JsonParseException(field + ".bones: unknown bone '" + bone + "', expected one of " + bones);
+            }
+        }
         return new EffectEntry(time, effect, locator, GsonHelper.getAsBoolean(json, "follow", false), until(json, field, time, length), GsonHelper.getAsBoolean(json, "persist", true));
     }
 

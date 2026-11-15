@@ -1,6 +1,7 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.vidal1shere.jasper.client.effect.afterimage.Afterimages;
 import com.vidal1shere.jasper.client.player.PlayerAdapter;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -37,6 +38,15 @@ public abstract class LivingEntityRendererMixin {
     private void jasper$capturePlayerLocators(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity instanceof Player && PlayerAdapter.isAnimating(entity) && ((LivingEntityRenderer<?, ?>) (Object) this).getModel() instanceof PlayerModel<?> model) {
             PlayerAdapter.captureModelLocators(entity, model, poseStack);
+        }
+    }
+
+    @Inject(method = RENDER, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"))
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void jasper$captureAfterimages(LivingEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
+        if (Afterimages.wants(entity)) {
+            LivingEntityRenderer renderer = (LivingEntityRenderer) (Object) this;
+            Afterimages.capture(entity, renderer.getModel(), poseStack, packedLight, renderer.getTextureLocation(entity));
         }
     }
 

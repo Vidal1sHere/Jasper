@@ -58,7 +58,7 @@ public abstract class AnimatedModel<T extends LivingEntity & AnimatedEntity> ext
     // The matrix a part renders with, from the matrix the model renders with
     @Nullable
     public Matrix4f matrix(Matrix4fc base, String bone) {
-        List<ModelPart> chain = chains.computeIfAbsent(bone, this::chain).orElse(null);
+        List<ModelPart> chain = chain(bone);
         if (chain == null) {
             return null;
         }
@@ -69,8 +69,14 @@ public abstract class AnimatedModel<T extends LivingEntity & AnimatedEntity> ext
         return matrix;
     }
 
-    // ModelPart keeps no parent, so the ancestors are the parts that contain it, the biggest first
-    private Optional<List<ModelPart>> chain(String bone) {
+    // The part and its ancestors, the biggest first
+    @Nullable
+    public List<ModelPart> chain(String bone) {
+        return chains.computeIfAbsent(bone, this::findChain).orElse(null);
+    }
+
+    // ModelPart keeps no parent, so the ancestors are the parts that contain it
+    private Optional<List<ModelPart>> findChain(String bone) {
         ModelPart part = part(bone);
         if (part == null) {
             return Optional.empty();
