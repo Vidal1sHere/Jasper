@@ -20,14 +20,16 @@ public final class EffectContext {
     private final String locator;
     private final boolean follow;
     private final boolean persist;
+    private final boolean bound;
     private Vec3 position;
 
-    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow, boolean persist) {
+    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow, boolean persist, boolean bound) {
         this.entity = entity;
         this.target = target;
         this.locator = locator;
         this.follow = follow;
         this.persist = persist;
+        this.bound = bound;
         Vec3 located = located();
         this.position = located != null ? located : entity.position();
     }
@@ -46,6 +48,11 @@ public final class EffectContext {
 
     public boolean persist() {
         return persist;
+    }
+
+    // An until of its entry decides when it ends, so an effect with a duration of its own holds until then instead
+    public boolean bound() {
+        return bound;
     }
 
     // Sampled when the effect started; a following one moves with its locator, or with the entity while the locator is not rendered (first person, off screen), and stays where it was once the entity left

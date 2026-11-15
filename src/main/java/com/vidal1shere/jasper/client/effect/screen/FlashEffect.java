@@ -1,0 +1,42 @@
+package com.vidal1shere.jasper.client.effect.screen;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.vidal1shere.jasper.client.JasperClientConfig;
+import com.vidal1shere.jasper.client.effect.AnimationEffect;
+import com.vidal1shere.jasper.client.effect.EffectContext;
+import com.vidal1shere.jasper.client.effect.Fade;
+import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.TextColor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
+
+// A full screen tint for the local player only; times are milliseconds on the real clock, so it keeps fading while a hit stop freezes the game; duration is the hold when the entry has no until
+@OnlyIn(Dist.CLIENT)
+public record FlashEffect(TextColor color, float opacity, float duration, Fade fadeIn, Fade fadeOut) implements AnimationEffect {
+    public static final MapCodec<FlashEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            TextColor.CODEC.optionalFieldOf("color", TextColor.fromLegacyFormat(ChatFormatting.WHITE)).forGetter(FlashEffect::color),
+            Codec.floatRange(0.0F, 1.0F).optionalFieldOf("opacity", 0.5F).forGetter(FlashEffect::opacity),
+            Codec.floatRange(0.0F, Float.MAX_VALUE).optionalFieldOf("duration", 50.0F).forGetter(FlashEffect::duration),
+            Fade.CODEC.optionalFieldOf("fade_in", Fade.NONE).forGetter(FlashEffect::fadeIn),
+            Fade.CODEC.optionalFieldOf("fade_out", Fade.of(150.0F)).forGetter(FlashEffect::fadeOut)
+    ).apply(instance, FlashEffect::new));
+
+    @Override
+    public boolean visual() {
+        return false;
+    }
+
+    @Override
+    @Nullable
+    public PlayingEffect start(EffectContext context) {
+        if (context.entity() != Minecraft.getInstance().player || !JasperClientConfig.FLASH.get()) {
+            return null;
+        }
+        return ScreenFlashes.start(this, context.bound());
+    }
+}

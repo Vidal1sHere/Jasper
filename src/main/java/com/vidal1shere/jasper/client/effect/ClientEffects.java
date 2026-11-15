@@ -116,7 +116,7 @@ public final class ClientEffects {
     }
 
     private static void start(Entity entity, LayerKey key, AnimationTrack.Entry entry, EffectEntry effect, float at) {
-        EffectContext context = new EffectContext(entity, key.target(), effect.locator(), effect.follow(), effect.persist());
+        EffectContext context = new EffectContext(entity, key.target(), effect.locator(), effect.follow(), effect.persist(), !Float.isNaN(effect.until()));
         PlayingEffect instance = effect.effect().start(context);
         if (instance == null) {
             return;

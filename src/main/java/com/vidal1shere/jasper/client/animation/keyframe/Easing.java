@@ -61,6 +61,10 @@ public enum Easing {
         return null;
     }
 
+    public String id() {
+        return id;
+    }
+
     public static String names() {
         StringBuilder builder = new StringBuilder();
         for (Easing easing : VALUES) {
