@@ -29,7 +29,6 @@ import java.util.function.UnaryOperator;
 @OnlyIn(Dist.CLIENT)
 public final class EntityAdapter {
     private static final LayerFrames FRAMES = new LayerFrames(null, null);
-    // Model parts and their locators are in pixels
     private static final float MODEL_UNIT = 1.0F / 16.0F;
 
     // The frames stay valid from setupAnim to the render of the same model, where the locators are captured
@@ -68,7 +67,6 @@ public final class EntityAdapter {
         }
     }
 
-    // From the top layer down, each one hides by its replace weight the look of the layers below it
     private static void look(ModelPart head, float netHeadYaw, float headPitch) {
         float pitch = 0.0F;
         float yaw = 0.0F;

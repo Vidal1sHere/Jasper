@@ -12,6 +12,5 @@ public final class JasperAttachments {
     public static final DeferredRegister<AttachmentType<?>> TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Jasper.MOD_ID);
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<AnimationData>> ANIMATIONS = TYPES.register("animations", () -> AttachmentType.builder(AnimationData::new).build());
-    // The animations of persistent layers, saved and kept through death; they play again when the entity loads
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<SavedAnimationData>> SAVED_ANIMATIONS = TYPES.register("saved_animations", () -> AttachmentType.builder(() -> SavedAnimationData.EMPTY).serialize(SavedAnimationData.CODEC).copyOnDeath().build());
 }

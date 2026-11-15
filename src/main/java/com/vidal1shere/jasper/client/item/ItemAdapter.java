@@ -70,20 +70,17 @@ public final class ItemAdapter {
         }
     }
 
-    // The pose stack is at the model, where its parts render
     public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, boolean firstPersonView, PoseStack poseStack, float partialTick) {
         if (evaluate(entity, hand, firstPersonView, partialTick) == 0) {
             return;
         }
         FRAMES.apply(parts::part, NOT_PARTS);
-        // Outside first person only the world counts, not the player drawn in the inventory screen
         if (hasLocators() && (firstPersonView || LocatorCapture.inLevel())) {
             Matrix4f root = new Matrix4f(poseStack.last().pose());
             LocatorCapture.capture(entity, target(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? null : parts.matrix(root, bone), UnaryOperator.identity(), PIXEL);
         }
     }
 
-    // A layer driven for an item the hand no longer holds is driven to nothing
     public static void drive(LivingEntity entity, InteractionHand hand, ItemStack stack, ItemDisplayContext displayContext, float partialTick) {
         AnimatedItem item = stack.getItem() instanceof AnimatedItem animated ? animated : null;
         ClientAnimationData data = item == null ? entity.getExistingDataOrNull(ClientAttachments.ANIMATIONS) : entity.getData(ClientAttachments.ANIMATIONS);

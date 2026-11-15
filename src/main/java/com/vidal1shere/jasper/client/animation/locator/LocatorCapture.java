@@ -59,7 +59,6 @@ public final class LocatorCapture {
         }
     }
 
-    // Parents answers the matrices of the bones this pass draws and null for the others; unit turns the locator positions into blocks
     public static void capture(Entity entity, AnimationTarget target, List<TrackFrame> frames, int count, Function<String, Matrix4fc> parents, UnaryOperator<String> counterpart, float unit) {
         if (target == AnimationTarget.MODEL && !inLevel) {
             return;
@@ -93,12 +92,10 @@ public final class LocatorCapture {
         }
     }
 
-    // ModelPart.translateAndRotate on a matrix
     public static Matrix4f part(Matrix4fc base, ModelPart part) {
         return new Matrix4f(base).translate(part.x / 16.0F, part.y / 16.0F, part.z / 16.0F).rotateZYX(part.zRot, part.yRot, part.xRot).scale(part.xScale, part.yScale, part.zScale);
     }
 
-    // Load checks that locator parents have no cycles
     @Nullable
     private static Matrix4f matrix(String name, Map<String, Locator> locators, boolean mirrored, List<TrackFrame> frames, int count, Function<String, Matrix4fc> parents, UnaryOperator<String> counterpart, float unit) {
         Locator locator = locators.get(name);

@@ -48,7 +48,6 @@ public final class PartLookup {
         return part.orElse(null);
     }
 
-    // The matrix a part renders with, from the matrix the model renders with
     @Nullable
     public Matrix4f matrix(Matrix4fc base, String bone) {
         List<ModelPart> chain = chain(bone);
@@ -62,7 +61,6 @@ public final class PartLookup {
         return matrix;
     }
 
-    // The part and its ancestors, the biggest first
     @Nullable
     public List<ModelPart> chain(String bone) {
         return chains.computeIfAbsent(bone, this::findChain).orElse(null);

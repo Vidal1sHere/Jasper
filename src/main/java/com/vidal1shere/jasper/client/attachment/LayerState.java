@@ -71,7 +71,6 @@ public final class LayerState {
         this.hand = hand;
     }
 
-    // The last animation a driver put on this layer, so it only pushes a change
     @Nullable
     public ResourceLocation driven() {
         return driven;
@@ -82,7 +81,6 @@ public final class LayerState {
         driverSeen = true;
     }
 
-    // What a play request put on this layer, which a driver leaves alone while it is alive
     @Nullable
     public ResourceLocation played() {
         return played;
@@ -96,7 +94,6 @@ public final class LayerState {
         return playedOptions;
     }
 
-    // On a driven layer a stop hands over to the driver, which crossfades from the play instead of from an empty pose
     public void play(@Nullable ResourceLocation animation, long startTick, PlayOptions options) {
         if (animation == null && driverSeen) {
             endPlay();
@@ -108,7 +105,6 @@ public final class LayerState {
         track.set(animation, startTick, options);
     }
 
-    // The entry whose effects fired last and how far, in elapsed seconds
     @Nullable
     public AnimationTrack.Entry firedEntry() {
         return firedEntry;

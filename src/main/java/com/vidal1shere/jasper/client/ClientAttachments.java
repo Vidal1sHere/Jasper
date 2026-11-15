@@ -22,7 +22,6 @@ public final class ClientAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<LocatorData>> LOCATORS = TYPES.register("locators", () -> AttachmentType.builder(LocatorData::new).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<EffectData>> EFFECTS = TYPES.register("effects", () -> AttachmentType.builder(EffectData::new).build());
 
-    // The data of the entity a payload names, created when missing; null when this client does not know the entity
     @Nullable
     public static <T> T of(int entityId, Supplier<AttachmentType<T>> type) {
         Entity entity = Minecraft.getInstance().level == null ? null : Minecraft.getInstance().level.getEntity(entityId);

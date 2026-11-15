@@ -14,13 +14,11 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 public interface AnimatedItem {
-    // Null keeps the texture of the item model
     @Nullable
     default ResourceLocation texture(ItemStack stack, @Nullable LivingEntity holder, @Nullable InteractionHand hand) {
         return null;
     }
 
-    // Synced on the server, local on the client
     default void setAnimation(LivingEntity holder, InteractionHand hand, ResourceLocation animation) {
         setAnimation(holder, hand, JasperLayers.BASE, animation);
     }
@@ -37,7 +35,6 @@ public interface AnimatedItem {
         play(holder, hand, layer, animation, PlayOptions.DEFAULT.withFirstPerson(firstPerson));
     }
 
-    // A later play on the layer replaces it, so both views at once take setAnimation with two animations
     default void setFirstPersonAnimation(LivingEntity holder, InteractionHand hand, ResourceLocation animation) {
         setFirstPersonAnimation(holder, hand, JasperLayers.BASE, animation);
     }

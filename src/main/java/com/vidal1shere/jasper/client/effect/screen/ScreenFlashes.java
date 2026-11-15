@@ -55,7 +55,6 @@ public final class ScreenFlashes {
     static final class Flash implements PlayingEffect {
         private final FlashEffect effect;
         private final long start;
-        // When the fade out begins; unknown until a bound flash is released
         private long released;
 
         private Flash(FlashEffect effect, boolean bound, long start) {

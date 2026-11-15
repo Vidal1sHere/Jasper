@@ -40,7 +40,6 @@ public record JasperAnimation(float length, LoopType loop, float blendTicks, Bon
         HOLD_ON_LAST_FRAME
     }
 
-    // Whether the head follows the look on each axis the animation leaves alone
     @OnlyIn(Dist.CLIENT)
     public record Look(boolean pitch, boolean yaw) {
         public static final Look NONE = new Look(false, false);

@@ -20,7 +20,6 @@ import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
 public final class PlayerAdapter {
-    // Model parts and their locators are in pixels
     private static final float MODEL_UNIT = 1.0F / 16.0F;
     // Animations are written for the right arm and mirrored when the hand is on the left one
     private static final LayerFrames FRAMES = new LayerFrames(PlayerBones.PAIRS, (context, entity, hand, partialTick) -> fillLook(context, entity, partialTick));
@@ -80,7 +79,6 @@ public final class PlayerAdapter {
         }
     }
 
-    // At the model render, with the root bone already on the pose stack; the item bones are captured by the item layer
     public static void captureModelLocators(LivingEntity entity, PlayerModel<?> model, PoseStack poseStack) {
         Matrix4f root = new Matrix4f(poseStack.last().pose());
         LocatorCapture.capture(entity, AnimationTarget.MODEL, FRAMES.frames(), FRAMES.size(), bone -> switch (bone) {

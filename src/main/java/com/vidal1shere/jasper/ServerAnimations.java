@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-// The server side of the animations: synced to the entity and its watchers, ended and saved by the policy of each layer
 @EventBusSubscriber(modid = Jasper.MOD_ID)
 public final class ServerAnimations {
     public static long play(LivingEntity entity, Layer layer, AnimationTarget target, ResourceLocation animation, PlayOptions options) {
@@ -87,7 +86,6 @@ public final class ServerAnimations {
         }
     }
 
-    // Saved animations are sent again for a client that does not have them yet
     private static void restore(LivingEntity entity) {
         if (!entity.hasData(JasperAttachments.SAVED_ANIMATIONS)) {
             return;

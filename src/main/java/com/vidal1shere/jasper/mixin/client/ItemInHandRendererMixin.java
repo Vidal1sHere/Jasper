@@ -1,6 +1,7 @@
 package com.vidal1shere.jasper.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.vidal1shere.jasper.client.effect.afterimage.Afterimages;
 import com.vidal1shere.jasper.client.effect.trail.Trails;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.item.render.JasperItemRenderer;
@@ -45,5 +46,6 @@ public abstract class ItemInHandRendererMixin {
     @Inject(method = "renderHandsWithItems", at = @At("TAIL"))
     private void jasper$renderHandTrails(float partialTicks, PoseStack poseStack, MultiBufferSource.BufferSource buffer, LocalPlayer player, int combinedLight, CallbackInfo ci) {
         Trails.onHandsRendered(partialTicks);
+        Afterimages.onHandsRendered(partialTicks);
     }
 }

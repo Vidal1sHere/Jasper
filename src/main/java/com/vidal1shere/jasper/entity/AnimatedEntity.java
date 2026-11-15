@@ -26,7 +26,6 @@ public interface AnimatedEntity {
         return dx * dx + dz * dz > 1.0E-4;
     }
 
-    // Plays on the base, over its driver until it ends or is stopped; on the server it is synced, on the client it only plays there
     default void setAnimation(ResourceLocation animation) {
         setAnimation(JasperLayers.BASE, animation);
     }
@@ -53,7 +52,6 @@ public interface AnimatedEntity {
         }
     }
 
-    // Read on the client every frame; the default walks or idles on the base of the model
     @Nullable
     default AnimationDriver driver(Layer layer, AnimationTarget target) {
         return layer == JasperLayers.BASE && target == AnimationTarget.MODEL ? LOCOMOTION : null;

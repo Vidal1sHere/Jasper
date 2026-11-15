@@ -10,7 +10,9 @@ import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.spec.Blend;
 import com.vidal1shere.jasper.client.effect.spec.Light;
 import com.vidal1shere.jasper.client.entity.AnimatedModel;
+import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
 import com.vidal1shere.jasper.client.player.PlayerBones;
+import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.PlayerModel;
@@ -36,6 +38,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 // A copy is the mesh the model drew in that frame, since the model is shared and posed again for every render
 @OnlyIn(Dist.CLIENT)
@@ -60,29 +63,21 @@ public final class Afterimages {
         afterimage.copies = 0;
     }
 
-    public static boolean wants(LivingEntity entity) {
-        if (ACTIVE.isEmpty() || !LocatorCapture.inLevel()) {
+    public static boolean wants(LivingEntity entity, AnimationTarget target, boolean hand) {
+        if (ACTIVE.isEmpty() || !hand && !LocatorCapture.inLevel()) {
             return false;
         }
         double now = entity.level().getGameTime() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         for (PlayingAfterimage afterimage : ACTIVE) {
-            if (afterimage.entity == entity && afterimage.due(now)) {
+            if (matches(afterimage, entity, target, hand) && afterimage.due(now)) {
                 return true;
             }
         }
         return false;
     }
 
-    // With the pose stack the model renders with
     public static void capture(LivingEntity entity, EntityModel<?> model, PoseStack poseStack, int packedLight, ResourceLocation texture) {
-        double now = entity.level().getGameTime() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        for (PlayingAfterimage afterimage : ACTIVE) {
-            if (afterimage.entity != entity || !afterimage.due(now)) {
-                continue;
-            }
-            AfterimageEffect effect = afterimage.effect;
-            RECORDER.start();
+        capture(entity, AnimationTarget.MODEL, false, packedLight, texture, effect -> {
             if (effect.bones().isEmpty()) {
                 model.renderToBuffer(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY, -1);
             } else {
@@ -90,10 +85,39 @@ public final class Afterimages {
                     renderBone(model, bone, poseStack, packedLight);
                 }
             }
+        });
+    }
+
+    public static void captureItem(LivingEntity holder, AnimationTarget target, boolean hand, AnimatedItemModel model, PoseStack poseStack, int packedLight, ResourceLocation texture) {
+        capture(holder, target, hand, packedLight, texture, effect -> {
+            if (effect.bones().isEmpty()) {
+                model.renderToBuffer(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY, -1);
+            } else {
+                for (String bone : effect.bones()) {
+                    renderChain(model.parts().chain(bone), poseStack, packedLight);
+                }
+            }
+        });
+    }
+
+    private static void capture(LivingEntity entity, AnimationTarget target, boolean hand, int packedLight, ResourceLocation texture, Consumer<AfterimageEffect> record) {
+        double now = entity.level().getGameTime() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        for (PlayingAfterimage afterimage : ACTIVE) {
+            if (!matches(afterimage, entity, target, hand) || !afterimage.due(now)) {
+                continue;
+            }
+            AfterimageEffect effect = afterimage.effect;
+            RECORDER.start();
+            record.accept(effect);
             int light = effect.light() == Light.FULL ? LightTexture.FULL_BRIGHT : packedLight;
             COPIES.add(new Copy(afterimage, RECORDER.finish(), camera, effect.texture() ? texture : null, light, now));
             afterimage.copied(now);
         }
+    }
+
+    private static boolean matches(PlayingAfterimage afterimage, LivingEntity entity, AnimationTarget target, boolean hand) {
+        return afterimage.entity == entity && afterimage.target == target && afterimage.hand == hand;
     }
 
     private static void renderBone(EntityModel<?> model, String bone, PoseStack poseStack, int packedLight) {
@@ -102,17 +126,20 @@ public final class Afterimages {
                 part.render(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY);
             }
         } else if (model instanceof AnimatedModel<?> animated) {
-            List<ModelPart> chain = animated.chain(bone);
-            if (chain == null) {
-                return;
-            }
-            poseStack.pushPose();
-            for (int i = 0; i < chain.size() - 1; i++) {
-                chain.get(i).translateAndRotate(poseStack);
-            }
-            chain.getLast().render(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY);
-            poseStack.popPose();
+            renderChain(animated.chain(bone), poseStack, packedLight);
         }
+    }
+
+    private static void renderChain(@Nullable List<ModelPart> chain, PoseStack poseStack, int packedLight) {
+        if (chain == null) {
+            return;
+        }
+        poseStack.pushPose();
+        for (int i = 0; i < chain.size() - 1; i++) {
+            chain.get(i).translateAndRotate(poseStack);
+        }
+        chain.getLast().render(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY);
+        poseStack.popPose();
     }
 
     private static List<ModelPart> playerParts(PlayerModel<?> model, String bone) {
@@ -140,15 +167,33 @@ public final class Afterimages {
             return;
         }
         double now = level.getGameTime() + event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Map<RenderType, List<Copy>> batches = new LinkedHashMap<>();
         COPIES.removeIf(copy -> {
             if (now - copy.born >= copy.owner.effect.lifetime()) {
                 copy.owner.copies--;
                 return true;
             }
-            batches.computeIfAbsent(type(copy), type -> new ArrayList<>()).add(copy);
             return false;
         });
+        render(now, false);
+    }
+
+    public static void onHandsRendered(float partialTick) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != null && !COPIES.isEmpty()) {
+            render(level.getGameTime() + partialTick, true);
+        }
+    }
+
+    private static void render(double now, boolean hands) {
+        Map<RenderType, List<Copy>> batches = new LinkedHashMap<>();
+        for (Copy copy : COPIES) {
+            if (copy.owner.hand == hands) {
+                batches.computeIfAbsent(type(copy), type -> new ArrayList<>()).add(copy);
+            }
+        }
+        if (batches.isEmpty()) {
+            return;
+        }
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         for (Map.Entry<RenderType, List<Copy>> batch : batches.entrySet()) {

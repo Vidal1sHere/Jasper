@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-// Start returns null when the effect is over as soon as it starts
 @OnlyIn(Dist.CLIENT)
 public interface AnimationEffect {
     @Nullable
@@ -14,6 +13,10 @@ public interface AnimationEffect {
 
     // Non visual effects, like sounds, fire from any target in any view, so they belong in one animation only
     default boolean visual() {
+        return true;
+    }
+
+    default boolean placed() {
         return true;
     }
 

@@ -35,7 +35,6 @@ import java.util.List;
 public final class ClientEffects {
     // A play this client learns about later than this was joined late (a relog, a new tracking), so its past keyframes do not fire
     private static final long LATE_TICKS = 10L;
-    // Below 0, so the keyframes at 0 of a new play fire
     private static final float BEFORE_START = -1.0F;
 
     private static final List<BoundEffect> DETACHED = new ArrayList<>();
@@ -155,10 +154,10 @@ public final class ClientEffects {
         if (target == AnimationTarget.MODEL) {
             return !firstPerson;
         }
-        if (firstPerson) {
+        if (firstPerson || !effect.effect().placed()) {
             return true;
         }
-        // Seen from outside, a hand effect needs the parts of a 3D item it hangs from; a flat item has none there, so it would land at the feet
+        // Outside first person only 3D items capture hand locators; a flat item's effects would land at the feet
         LocatorData data = entity.getExistingDataOrNull(ClientAttachments.LOCATORS);
         if (data == null || effect.locator() == null && effect.effect().locators().isEmpty()) {
             return false;

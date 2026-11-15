@@ -2,6 +2,8 @@ package com.vidal1shere.jasper.client.effect.afterimage;
 
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
+import com.vidal1shere.jasper.client.molang.BuiltinQueries;
+import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -10,6 +12,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 final class PlayingAfterimage implements PlayingEffect {
     final AfterimageEffect effect;
     final LivingEntity entity;
+    final AnimationTarget target;
+    final boolean hand;
     private final boolean persist;
     private boolean emitting = true;
     private double lastCopy = Double.NEGATIVE_INFINITY;
@@ -18,6 +22,8 @@ final class PlayingAfterimage implements PlayingEffect {
     PlayingAfterimage(AfterimageEffect effect, EffectContext context) {
         this.effect = effect;
         this.entity = (LivingEntity) context.entity();
+        this.target = context.target();
+        this.hand = target != AnimationTarget.MODEL && BuiltinQueries.isFirstPerson(entity);
         this.persist = context.persist();
     }
 

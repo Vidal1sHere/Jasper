@@ -13,7 +13,6 @@ public record EffectTimeline(List<EffectEntry> entries) {
         return entries.isEmpty();
     }
 
-    // A cycling animation fires each entry once per cycle
     public void fire(float from, float to, float length, boolean cycles, Fired fired) {
         if (to <= from) {
             return;

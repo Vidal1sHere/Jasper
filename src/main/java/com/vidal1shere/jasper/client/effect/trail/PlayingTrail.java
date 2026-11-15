@@ -23,7 +23,6 @@ final class PlayingTrail implements PlayingEffect {
     final Deque<Ring> rings = new ArrayDeque<>();
     private final Entity entity;
     private final AnimationTarget target;
-    // Hand trails seen in first person live in the hand pass, those of a 3D item seen from outside in the world
     private final boolean hand;
     private final boolean persist;
     private boolean recording = true;
@@ -82,7 +81,6 @@ final class PlayingTrail implements PlayingEffect {
         }
     }
 
-    // A removed entity leaves its rings where it was
     Vec3 origin(float partialTick) {
         if (effect.space() == TrailEffect.Space.WORLD) {
             return Vec3.ZERO;

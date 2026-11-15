@@ -10,7 +10,6 @@ import com.vidal1shere.jasper.client.effect.spec.Blend;
 import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import com.vidal1shere.jasper.client.effect.spec.Fade;
 import com.vidal1shere.jasper.client.effect.spec.Light;
-import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FastColor;
@@ -44,10 +43,15 @@ public record AfterimageEffect(List<String> bones, TextColor color, float alpha,
     @Override
     @Nullable
     public PlayingEffect start(EffectContext context) {
-        if (context.target() != AnimationTarget.MODEL || !(context.entity() instanceof LivingEntity)) {
+        if (!(context.entity() instanceof LivingEntity)) {
             return null;
         }
         return Afterimages.start(this, context);
+    }
+
+    @Override
+    public boolean placed() {
+        return false;
     }
 
     float lifetime() {

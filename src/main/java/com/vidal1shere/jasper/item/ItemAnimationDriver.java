@@ -7,7 +7,6 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
-// Asked every frame the stack renders in a hand; a play on the layer overrides it while it plays
 @FunctionalInterface
 public interface ItemAnimationDriver {
     @Nullable

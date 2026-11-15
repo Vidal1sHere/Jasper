@@ -15,7 +15,6 @@ public final class LocatorData {
         captured.computeIfAbsent(target, key -> new HashMap<>()).put(locator, new CapturedLocator(position, tick, frame));
     }
 
-    // Null when it was never captured or only before the given tick
     @Nullable
     public Vec3 get(AnimationTarget target, String locator, long since) {
         Map<String, CapturedLocator> locators = captured.get(target);

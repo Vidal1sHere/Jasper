@@ -23,7 +23,6 @@ import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
 public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, float speed, Vec3 velocity, Optional<Integer> lifetime, int interval) implements AnimationEffect {
-    // Vanilla does not spawn particles farther than this from the camera
     private static final double MAX_DISTANCE_SQUARED = 32.0 * 32.0;
 
     public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -36,7 +35,6 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
             EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval)
     ).apply(instance, ParticleEffect::new));
 
-    // Particles that do not persist need an instance that removes them when it ends
     @Override
     @Nullable
     public PlayingEffect start(EffectContext context) {

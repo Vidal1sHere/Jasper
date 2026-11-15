@@ -18,10 +18,8 @@ import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
 public final class AnimationTrack {
-    // Bounds the stack when animations arrive faster than they fade
     public static final int MAX_FADES = 8;
 
-    // Each play is its own entry, so the same animation played again is a different one
     public record Entry(@Nullable ResourceLocation id, long startTick, float speed, boolean loop, @Nullable ResourceLocation firstPerson, PlayView view) {
         // Never wrapped, so the cycles of a loop can be counted
         public float elapsed(double now) {
@@ -63,7 +61,6 @@ public final class AnimationTrack {
         push(new Entry(id, startTick, options.speed(), options.loop(), options.firstPerson(), options.view()), startTick, fading == null ? 0.0F : fading.blendTicks());
     }
 
-    // Ends a finished play once animation with an empty fade at its end, then drops the fades hidden by a fully faded one
     public void update(double now) {
         Fade top = fades.getLast();
         JasperAnimation animation = animation(fades.size() - 1);
@@ -110,7 +107,6 @@ public final class AnimationTrack {
         return fades.get(i).entry();
     }
 
-    // -1 once it was dropped
     public int indexOf(Entry entry) {
         for (int i = 0; i < fades.size(); i++) {
             if (fades.get(i).entry() == entry) {

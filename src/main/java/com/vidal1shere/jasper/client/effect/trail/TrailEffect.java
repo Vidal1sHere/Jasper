@@ -58,7 +58,6 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
         return Trails.start(this, context);
     }
 
-    // Age is 0 when a ring is born and 1 when it dies
     int argb(float age, int index) {
         float t = easing.apply(Mth.clamp(age, 0.0F, 1.0F), easing.defaultArgument());
         int start = at(color, index).getValue();

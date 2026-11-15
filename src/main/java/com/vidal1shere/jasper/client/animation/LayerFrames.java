@@ -36,13 +36,11 @@ public final class LayerFrames {
     private final QuerySource queries;
     private int size;
 
-    // Null mirror pairs never mirror
     public LayerFrames(@Nullable String[][] mirrorPairs, @Nullable QuerySource queries) {
         this.mirrorPairs = mirrorPairs;
         this.queries = queries;
     }
 
-    // A null hand uses the hand each layer was played with
     public int evaluate(LivingEntity entity, AnimationTarget target, @Nullable InteractionHand hand, float partialTick) {
         size = 0;
         layers.clear();
@@ -87,7 +85,6 @@ public final class LayerFrames {
         return frames.get(index);
     }
 
-    // Valid up to size()
     public List<TrackFrame> frames() {
         return frames;
     }
@@ -96,7 +93,6 @@ public final class LayerFrames {
         return layers.contains(layer);
     }
 
-    // Locators and the ignored bones are not parts
     public void apply(Function<String, ModelPart> parts, Set<String> ignored) {
         for (int f = 0; f < size; f++) {
             TrackFrame frame = frames.get(f);

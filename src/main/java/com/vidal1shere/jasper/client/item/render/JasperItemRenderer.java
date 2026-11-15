@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.logging.LogUtils;
 import com.vidal1shere.jasper.Jasper;
+import com.vidal1shere.jasper.client.effect.afterimage.Afterimages;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
 import com.vidal1shere.jasper.client.item.model.JasperItemModel;
@@ -125,6 +126,9 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         model.parts().root().getAllParts().forEach(ModelPart::resetPose);
         if (holder != null && holderHand != null) {
             ItemAdapter.applyParts(holder, holderHand, model.parts(), displayContext.firstPerson(), poseStack, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
+        }
+        if (holder != null && holderHand != null && Afterimages.wants(holder, ItemAdapter.target(holderHand), displayContext.firstPerson())) {
+            Afterimages.captureItem(holder, ItemAdapter.target(holderHand), displayContext.firstPerson(), model, poseStack, packedLight, texture);
         }
         VertexConsumer consumer = ItemRenderer.getFoilBufferDirect(buffer, model.renderType(texture), false, stack.hasFoil());
         model.renderToBuffer(poseStack, consumer, packedLight, packedOverlay);

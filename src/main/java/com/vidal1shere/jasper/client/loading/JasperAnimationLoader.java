@@ -63,7 +63,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private final Map<ResourceLocation, Supplier<JasperAnimation>> registered = new HashMap<>();
     private Map<ResourceLocation, JasperAnimation> loaded = Map.of();
 
-    // Null bones accept any bone, for models whose parts are only known when they render
     public JasperAnimationLoader(String directory, String kind, @Nullable Set<String> bones, KeyframeJson.Units units, Set<String> extraFields) {
         this.directory = directory;
         this.kind = kind;
@@ -95,7 +94,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
 
     private JasperAnimation parse(JsonObject json, Map<String, Locator> fileLocators) {
         Map<String, Locator> locators = json.has("locators") ? locators(json.get("locators"), fileLocators) : new LinkedHashMap<>(fileLocators);
-        // Locators are animated like bones, under their own names
         Set<String> animated = bones == null ? null : Sets.union(bones, locators.keySet()).immutableCopy();
         BoneTimeline keyframes = KeyframeJson.parse(json, animated, units, extraFields);
         float length = json.has("animation_length") ? GsonHelper.getAsFloat(json, "animation_length") : keyframes.lastKeyframe();
@@ -132,7 +130,6 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
         throw new JsonParseException("loop: expected true, false or \"hold_on_last_frame\", got " + loop);
     }
 
-    // Overrides the inherited locators of the same name
     private Map<String, Locator> locators(JsonElement json, Map<String, Locator> inherited) {
         Map<String, Locator> locators = new LinkedHashMap<>(inherited);
         for (Map.Entry<String, JsonElement> entry : GsonHelper.convertToJsonObject(json, "locators").entrySet()) {

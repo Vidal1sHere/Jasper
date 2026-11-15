@@ -43,7 +43,6 @@ public final class BuiltinQueries {
         }
     }
 
-    // Look direction in the space of the rendered model, so body rotations such as elytra count
     public static void fillLook(MolangContext context, LivingEntity entity, float partialTick, Matrix3f world, Matrix3f model) {
         float pitch = entity.getViewXRot(partialTick) * Mth.DEG_TO_RAD;
         float yaw = -entity.getViewYRot(partialTick) * Mth.DEG_TO_RAD;

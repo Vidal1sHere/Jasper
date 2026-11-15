@@ -54,7 +54,6 @@ public final class FovModifiers {
     static final class Change implements PlayingEffect {
         private final FovEffect effect;
         private final long start;
-        // When the fade out begins; unknown until a bound change is released
         private long released;
 
         private Change(FovEffect effect, boolean bound, long start) {

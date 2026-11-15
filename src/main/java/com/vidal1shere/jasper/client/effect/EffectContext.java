@@ -49,7 +49,6 @@ public final class EffectContext {
         return persist;
     }
 
-    // An until of its entry decides when it ends, so an effect with a duration of its own holds until then instead
     public boolean bound() {
         return bound;
     }

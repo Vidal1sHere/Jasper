@@ -54,7 +54,6 @@ public final class TrackFrame {
         return animations.get(index);
     }
 
-    // The share of the final pose that layer i gives, once every newer layer faded in over it
     public float weight(int index) {
         float weight = blends[index];
         for (int i = index + 1; i < size; i++) {
@@ -72,7 +71,6 @@ public final class TrackFrame {
         return false;
     }
 
-    // For bones applied on a pose stack, where no animation means no change
     public BonePose blend(String bone) {
         blended.set(pose(0, bone));
         for (int i = 1; i < size; i++) {
@@ -101,7 +99,6 @@ public final class TrackFrame {
         }
     }
 
-    // The same as apply, for bones that are only a pose, like locators
     public void resolve(String bone, BonePose pose, PartPose initial) {
         if (!animates(bone)) {
             return;
