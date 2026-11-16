@@ -6,6 +6,7 @@ import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.client.effect.EffectCodecs;
+import com.vidal1shere.jasper.client.effect.spec.ParticleShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -13,6 +14,7 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -22,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
-public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, float speed, Vec3 velocity, Optional<Integer> lifetime, int interval) implements AnimationEffect {
+public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, float speed, Vec3 velocity, Optional<Integer> lifetime, int interval, ParticleShape shape) implements AnimationEffect {
     private static final double MAX_DISTANCE_SQUARED = 32.0 * 32.0;
 
     public static final MapCodec<ParticleEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -32,7 +34,8 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
             EffectCodecs.number(0.0F, Float.MAX_VALUE).optionalFieldOf("speed", 0.0F).forGetter(ParticleEffect::speed),
             EffectCodecs.vector().optionalFieldOf("velocity", Vec3.ZERO).forGetter(ParticleEffect::velocity),
             EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("lifetime").forGetter(ParticleEffect::lifetime),
-            EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval)
+            EffectCodecs.integer(1, Integer.MAX_VALUE).optionalFieldOf("interval", 1).forGetter(ParticleEffect::interval),
+            ParticleShape.CODEC.optionalFieldOf("shape", ParticleShape.GAUSSIAN).forGetter(ParticleEffect::shape)
     ).apply(instance, ParticleEffect::new));
 
     @Override
@@ -43,7 +46,7 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
     }
 
     // The particle engine returns the particles so they can be removed, but skips the checks of addParticle: the particles option and the camera distance
-    void spawn(Vec3 at, @Nullable List<Particle> spawned) {
+    void spawn(Vec3 at, Entity entity, @Nullable List<Particle> spawned) {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) {
@@ -59,9 +62,22 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
             if (!force && (status == ParticleStatus.MINIMAL || status == ParticleStatus.DECREASED && random.nextInt(3) == 0)) {
                 continue;
             }
-            Particle created = minecraft.particleEngine.createParticle(particle,
-                    at.x + random.nextGaussian() * spread.x, at.y + random.nextGaussian() * spread.y, at.z + random.nextGaussian() * spread.z,
-                    velocity.x + random.nextGaussian() * speed, velocity.y + random.nextGaussian() * speed, velocity.z + random.nextGaussian() * speed);
+            Particle created;
+            if (shape == ParticleShape.ENTITY) {
+                double x = random.nextFloat() * 2.0F - 1.0F;
+                double y = random.nextFloat() * 2.0F - 1.0F;
+                double z = random.nextFloat() * 2.0F - 1.0F;
+                if (x * x + y * y + z * z > 1.0) {
+                    continue;
+                }
+                created = minecraft.particleEngine.createParticle(particle,
+                        at.x + x * spread.x * entity.getBbWidth(), at.y + y * spread.y * entity.getBbHeight(), at.z + z * spread.z * entity.getBbWidth(),
+                        velocity.x + x * speed, velocity.y + y * speed, velocity.z + z * speed);
+            } else {
+                created = minecraft.particleEngine.createParticle(particle,
+                        at.x + random.nextGaussian() * spread.x, at.y + random.nextGaussian() * spread.y, at.z + random.nextGaussian() * spread.z,
+                        velocity.x + random.nextGaussian() * speed, velocity.y + random.nextGaussian() * speed, velocity.z + random.nextGaussian() * speed);
+            }
             if (created == null) {
                 continue;
             }

@@ -23,7 +23,7 @@ final class PlayingParticles implements PlayingEffect {
         this.follow = context.follow();
         this.spawned = context.persist() ? null : new ArrayList<>();
         this.wait = effect.interval();
-        effect.spawn(context.position(), spawned);
+        effect.spawn(context.position(), context.entity(), spawned);
     }
 
     @Override
@@ -36,7 +36,7 @@ final class PlayingParticles implements PlayingEffect {
         }
         if (--wait <= 0) {
             wait = effect.interval();
-            effect.spawn(context.position(), spawned);
+            effect.spawn(context.position(), context.entity(), spawned);
         }
         return true;
     }

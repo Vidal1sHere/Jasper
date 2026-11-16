@@ -13,6 +13,7 @@ import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.client.molang.MolangQuery;
 import com.vidal1shere.jasper.client.molang.MolangValue;
+import com.vidal1shere.jasper.client.molang.QuerySource;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -42,9 +43,18 @@ public final class MolangEffect {
 
     @Nullable
     public AnimationEffect resolve(Entity entity, AnimationTarget target, float animTime) {
+        return resolve(entity, target, animTime, null);
+    }
+
+    @Nullable
+    public AnimationEffect resolve(Entity entity, AnimationTarget target, float animTime, @Nullable QuerySource queries) {
         CONTEXT.resetVariables();
         if (entity instanceof LivingEntity living) {
-            BuiltinQueries.fill(CONTEXT, living, target == AnimationTarget.OFF_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, 1.0F);
+            InteractionHand hand = target == AnimationTarget.OFF_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+            BuiltinQueries.fill(CONTEXT, living, hand, 1.0F);
+            if (queries != null) {
+                queries.fill(CONTEXT, living, hand, 1.0F);
+            }
         }
         CONTEXT.set(MolangQuery.ANIM_TIME, animTime);
         JsonElement resolved = substitute(json);

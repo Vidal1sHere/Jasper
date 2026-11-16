@@ -9,6 +9,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Supplier;
+
 @OnlyIn(Dist.CLIENT)
 public final class EffectContext {
     public static final long FRESH_TICKS = 2L;
@@ -20,17 +22,24 @@ public final class EffectContext {
     private final boolean follow;
     private final boolean persist;
     private final boolean bound;
+    private final Supplier<Vec3> fallback;
     private Vec3 position;
 
     public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow, boolean persist, boolean bound) {
+        this(entity, target, locator, follow, persist, bound, entity::position);
+    }
+
+    // The fallback stands in while the locator is not rendered, or always without one
+    public EffectContext(Entity entity, AnimationTarget target, @Nullable String locator, boolean follow, boolean persist, boolean bound, Supplier<Vec3> fallback) {
         this.entity = entity;
         this.target = target;
         this.locator = locator;
         this.follow = follow;
         this.persist = persist;
         this.bound = bound;
+        this.fallback = fallback;
         Vec3 located = located();
-        this.position = located != null ? located : entity.position();
+        this.position = located != null ? located : fallback.get();
     }
 
     public Entity entity() {
@@ -57,7 +66,7 @@ public final class EffectContext {
     public Vec3 position() {
         if (follow && !entity.isRemoved()) {
             Vec3 located = located();
-            position = located != null ? located : entity.position();
+            position = located != null ? located : fallback.get();
         }
         return position;
     }

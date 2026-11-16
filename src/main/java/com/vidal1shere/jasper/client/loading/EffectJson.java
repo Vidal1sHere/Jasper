@@ -59,7 +59,12 @@ public final class EffectJson {
         return new EffectTimeline(List.copyOf(entries));
     }
 
-    private static EffectEntry entry(JsonObject json, String field, float time, float length, Map<String, Locator> locators, @Nullable Set<String> bones) {
+    // One entry played outside an animation: no animation declares its locators, and until counts seconds from its start or is "end", until it is ended
+    public static EffectEntry parseEntry(JsonObject json) {
+        return entry(json, "effect", 0.0F, Float.MAX_VALUE, null, null);
+    }
+
+    private static EffectEntry entry(JsonObject json, String field, float time, float length, @Nullable Map<String, Locator> locators, @Nullable Set<String> bones) {
         String typeName = GsonHelper.getAsString(json, "type");
         ResourceLocation type = typeName.indexOf(':') < 0 ? ResourceLocation.tryBuild(Jasper.MOD_ID, typeName) : ResourceLocation.tryParse(typeName);
         MapCodec<? extends AnimationEffect> codec = type == null ? null : JasperEffects.get(type);
@@ -78,11 +83,13 @@ public final class EffectJson {
         AnimationEffect effect = decoded.value();
         MolangEffect molang = decoded.expressions().isEmpty() ? null : new MolangEffect(codec, json.deepCopy(), decoded.expressions());
         String locator = json.has("locator") ? GsonHelper.getAsString(json, "locator") : null;
-        if (locator != null) {
-            locator(locator, field + ".locator", locators, bones);
-        }
-        for (String read : effect.locators()) {
-            locator(read, field + ".locators", locators, bones);
+        if (locators != null) {
+            if (locator != null) {
+                locator(locator, field + ".locator", locators, bones);
+            }
+            for (String read : effect.locators()) {
+                locator(read, field + ".locators", locators, bones);
+            }
         }
         for (String bone : effect.bones()) {
             if (bones != null && !bones.contains(bone)) {

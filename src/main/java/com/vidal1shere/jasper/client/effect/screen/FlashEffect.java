@@ -3,21 +3,18 @@ package com.vidal1shere.jasper.client.effect.screen;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.vidal1shere.jasper.client.JasperClientConfig;
-import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import com.vidal1shere.jasper.client.effect.spec.Fade;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.TextColor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.jetbrains.annotations.Nullable;
 
 // Milliseconds on the real clock, so it keeps fading while a hit stop freezes the game
 @OnlyIn(Dist.CLIENT)
-public record FlashEffect(TextColor color, float opacity, float duration, Fade fadeIn, Fade fadeOut) implements AnimationEffect {
+public record FlashEffect(TextColor color, float opacity, float duration, Fade fadeIn, Fade fadeOut) implements ScreenEffect {
     public static final MapCodec<FlashEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             TextColor.CODEC.optionalFieldOf("color", TextColor.fromLegacyFormat(ChatFormatting.WHITE)).forGetter(FlashEffect::color),
             EffectCodecs.number(0.0F, 1.0F).optionalFieldOf("opacity", 0.5F).forGetter(FlashEffect::opacity),
@@ -27,16 +24,12 @@ public record FlashEffect(TextColor color, float opacity, float duration, Fade f
     ).apply(instance, FlashEffect::new));
 
     @Override
-    public boolean visual() {
-        return false;
+    public boolean enabled() {
+        return JasperClientConfig.FLASH.get();
     }
 
     @Override
-    @Nullable
-    public PlayingEffect start(EffectContext context) {
-        if (context.entity() != Minecraft.getInstance().player || !JasperClientConfig.FLASH.get()) {
-            return null;
-        }
+    public PlayingEffect play(EffectContext context) {
         return ScreenFlashes.start(this, context.bound());
     }
 }

@@ -4,7 +4,6 @@ import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.animation.AnimationTrack;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
-import com.vidal1shere.jasper.client.attachment.BoundEffect;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.EffectData;
 import com.vidal1shere.jasper.client.attachment.LocatorData;
@@ -13,11 +12,13 @@ import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
+import com.vidal1shere.jasper.client.molang.QuerySource;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.LayerKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
@@ -37,7 +39,8 @@ public final class ClientEffects {
     private static final long LATE_TICKS = 10L;
     private static final float BEFORE_START = -1.0F;
 
-    private static final List<BoundEffect> DETACHED = new ArrayList<>();
+    // The effects that outlive their entity
+    private static final List<EffectHandle> DETACHED = new ArrayList<>();
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -53,10 +56,10 @@ public final class ClientEffects {
             }
             EffectData effects = entity.getExistingDataOrNull(ClientAttachments.EFFECTS);
             if (effects != null) {
-                tick(layers, effects, now);
+                effects.running().removeIf(handle -> !handle.tick(now, layers));
             }
         }
-        DETACHED.removeIf(running -> !running.instance().tick(running.context()));
+        DETACHED.removeIf(handle -> !handle.tick(now, null));
     }
 
     @SubscribeEvent
@@ -68,11 +71,10 @@ public final class ClientEffects {
         if (effects == null) {
             return;
         }
-        for (BoundEffect running : effects.running()) {
-            if (running.persist() && running.instance().endsByItself()) {
-                DETACHED.add(running);
-            } else {
-                running.instance().end();
+        for (EffectHandle handle : effects.running()) {
+            handle.end();
+            if (!handle.ended()) {
+                DETACHED.add(handle);
             }
         }
         effects.running().clear();
@@ -80,8 +82,29 @@ public final class ClientEffects {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        DETACHED.forEach(running -> running.instance().end());
+        DETACHED.forEach(EffectHandle::discard);
         DETACHED.clear();
+    }
+
+    // An entry of EffectJson.parseEntry started on an entity outside any animation; the position stands in without a captured locator, the queries add molang values of the caller
+    @Nullable
+    public static EffectHandle play(Entity entity, AnimationTarget target, EffectEntry entry, Supplier<Vec3> position, @Nullable QuerySource queries) {
+        return play(entity, target, entry, 0.0F, null, null, entry.until(), position, queries);
+    }
+
+    // The one way an effect starts, from a keyframe (key and the entry that fired it) or from outside
+    @Nullable
+    private static EffectHandle play(Entity entity, AnimationTarget target, EffectEntry effect, float at, @Nullable LayerKey key, @Nullable AnimationTrack.Entry entry, float until,
+                                     Supplier<Vec3> position, @Nullable QuerySource queries) {
+        EffectContext context = new EffectContext(entity, target, effect.locator(), effect.follow(), effect.persist(), !Float.isNaN(effect.until()), position);
+        AnimationEffect resolved = effect.molang() == null ? effect.effect() : effect.molang().resolve(entity, target, at, queries);
+        PlayingEffect instance = resolved == null ? null : resolved.start(context);
+        if (instance == null) {
+            return null;
+        }
+        EffectHandle handle = new EffectHandle(instance, context, key, entry, entity.level().getGameTime(), until, effect.persist());
+        entity.getData(ClientAttachments.EFFECTS).running().add(handle);
+        return handle;
     }
 
     private static void fire(Entity entity, LayerKey key, LayerState layer, long now) {
@@ -118,34 +141,8 @@ public final class ClientEffects {
     }
 
     private static void start(Entity entity, LayerKey key, AnimationTrack.Entry entry, EffectEntry effect, float at) {
-        EffectContext context = new EffectContext(entity, key.target(), effect.locator(), effect.follow(), effect.persist(), !Float.isNaN(effect.until()));
-        AnimationEffect resolved = effect.molang() == null ? effect.effect() : effect.molang().resolve(entity, key.target(), at);
-        PlayingEffect instance = resolved == null ? null : resolved.start(context);
-        if (instance == null) {
-            return;
-        }
         float until = Float.isNaN(effect.until()) || Float.isInfinite(effect.until()) ? effect.until() : at - effect.time() + effect.until();
-        entity.getData(ClientAttachments.EFFECTS).running().add(new BoundEffect(key, entry, instance, context, until, effect.persist()));
-    }
-
-    private static void tick(@Nullable ClientAnimationData layers, EffectData effects, long now) {
-        effects.running().removeIf(running -> {
-            LayerState layer = layers == null ? null : layers.existing(running.key().target(), running.key().layer());
-            boolean playing = layer != null && layer.track().entry(layer.track().size() - 1) == running.entry();
-            if (playing && running.until() <= running.entry().elapsed(now)) {
-                running.instance().end();
-                return true;
-            }
-            if (!playing) {
-                if (running.persist() && running.instance().endsByItself()) {
-                    DETACHED.add(running);
-                } else {
-                    running.instance().end();
-                }
-                return true;
-            }
-            return !running.instance().tick(running.context());
-        });
+        play(entity, key.target(), effect, at, key, entry, until, entity::position, null);
     }
 
     private static boolean visible(Entity entity, AnimationTarget target, EffectEntry effect, long now) {

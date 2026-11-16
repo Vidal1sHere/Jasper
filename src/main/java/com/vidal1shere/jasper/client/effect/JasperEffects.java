@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.effect.afterimage.AfterimageEffect;
 import com.vidal1shere.jasper.client.effect.particle.ParticleEffect;
+import com.vidal1shere.jasper.client.effect.screen.CameraShakeEffect;
 import com.vidal1shere.jasper.client.effect.screen.FlashEffect;
 import com.vidal1shere.jasper.client.effect.screen.FovEffect;
 import com.vidal1shere.jasper.client.effect.screen.HitStopEffect;
@@ -28,6 +29,7 @@ public final class JasperEffects {
     public static final ResourceLocation FLASH = register(Jasper.id("flash"), FlashEffect.CODEC);
     public static final ResourceLocation FOV = register(Jasper.id("fov"), FovEffect.CODEC);
     public static final ResourceLocation HIT_STOP = register(Jasper.id("hit_stop"), HitStopEffect.CODEC);
+    public static final ResourceLocation CAMERA_SHAKE = register(Jasper.id("camera_shake"), CameraShakeEffect.CODEC);
     public static final ResourceLocation TRAIL = register(Jasper.id("trail"), TrailEffect.CODEC);
     public static final ResourceLocation AFTERIMAGE = register(Jasper.id("afterimage"), AfterimageEffect.CODEC);
 
