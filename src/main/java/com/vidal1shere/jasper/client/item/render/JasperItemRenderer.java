@@ -7,6 +7,7 @@ import com.vidal1shere.jasper.Jasper;
 import com.vidal1shere.jasper.client.effect.afterimage.Afterimages;
 import com.vidal1shere.jasper.client.item.ItemAdapter;
 import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
+import com.vidal1shere.jasper.client.item.model.ItemAttachment;
 import com.vidal1shere.jasper.client.item.model.JasperItemModel;
 import com.vidal1shere.jasper.item.AnimatedItem;
 import net.minecraft.client.Minecraft;
@@ -14,11 +15,13 @@ import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
@@ -33,9 +36,11 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -132,6 +137,33 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         }
         VertexConsumer consumer = ItemRenderer.getFoilBufferDirect(buffer, model.renderType(texture), false, stack.hasFoil());
         model.renderToBuffer(poseStack, consumer, packedLight, packedOverlay);
+        for (Map.Entry<ItemAttachment, BakedModel> attachment : baked.attachments().entrySet()) {
+            renderAttachment(stack, model, attachment.getKey(), attachment.getValue(), poseStack, buffer, packedLight, packedOverlay);
+        }
+        poseStack.popPose();
+    }
+
+    private static void renderAttachment(ItemStack stack, AnimatedItemModel model, ItemAttachment attachment, BakedModel attached, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        List<ModelPart> chain = model.parts().chain(attachment.bone());
+        if (chain == null) {
+            return;
+        }
+        poseStack.pushPose();
+        for (ModelPart part : chain) {
+            part.translateAndRotate(poseStack);
+        }
+        // Back to item space at the bone, Y up, then the item model spans 0 to 16 around it
+        poseStack.scale(-1.0F, -1.0F, 1.0F);
+        poseStack.translate(attachment.translation().x / 16.0F, attachment.translation().y / 16.0F, attachment.translation().z / 16.0F);
+        poseStack.mulPose(new Quaternionf().rotationXYZ(attachment.rotation().x * Mth.DEG_TO_RAD, attachment.rotation().y * Mth.DEG_TO_RAD, attachment.rotation().z * Mth.DEG_TO_RAD));
+        poseStack.scale(attachment.scale(), attachment.scale(), attachment.scale());
+        poseStack.translate(-0.5F, -0.5F, -0.5F);
+        ItemRenderer renderer = Minecraft.getInstance().getItemRenderer();
+        for (BakedModel pass : attached.getRenderPasses(stack, true)) {
+            for (RenderType type : pass.getRenderTypes(stack, true)) {
+                renderer.renderModelLists(pass, stack, packedLight, packedOverlay, poseStack, ItemRenderer.getFoilBufferDirect(buffer, type, true, stack.hasFoil()));
+            }
+        }
         poseStack.popPose();
     }
 
