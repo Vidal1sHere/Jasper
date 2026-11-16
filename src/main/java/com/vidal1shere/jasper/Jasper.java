@@ -2,11 +2,9 @@ package com.vidal1shere.jasper;
 
 import com.vidal1shere.jasper.network.JasperNetwork;
 import com.vidal1shere.jasper.registry.JasperAttachments;
-import com.vidal1shere.jasper.test.TestItems;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLEnvironment;
 
 @Mod(Jasper.MOD_ID)
 public class Jasper {
@@ -15,9 +13,6 @@ public class Jasper {
     public Jasper(IEventBus modBus) {
         JasperAttachments.TYPES.register(modBus);
         modBus.addListener(JasperNetwork::onRegisterPayloads);
-        if (!FMLEnvironment.production) {
-            TestItems.register(modBus);
-        }
     }
 
     public static ResourceLocation id(String path) {
