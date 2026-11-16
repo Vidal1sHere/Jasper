@@ -10,6 +10,7 @@ import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
 import com.vidal1shere.jasper.client.item.model.ItemAttachment;
 import com.vidal1shere.jasper.client.item.model.JasperItemModel;
 import com.vidal1shere.jasper.item.AnimatedItem;
+import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -132,8 +133,8 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         if (holder != null && holderHand != null) {
             ItemAdapter.applyParts(holder, holderHand, model.parts(), displayContext.firstPerson(), poseStack, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
         }
-        if (holder != null && holderHand != null && Afterimages.wants(holder, ItemAdapter.target(holderHand), displayContext.firstPerson())) {
-            Afterimages.captureItem(holder, ItemAdapter.target(holderHand), displayContext.firstPerson(), model, poseStack, packedLight, texture);
+        if (holder != null && holderHand != null && Afterimages.wants(holder, AnimationTarget.of(holderHand), displayContext.firstPerson())) {
+            Afterimages.captureItem(holder, AnimationTarget.of(holderHand), displayContext.firstPerson(), model, poseStack, packedLight, texture);
         }
         VertexConsumer consumer = ItemRenderer.getFoilBufferDirect(buffer, model.renderType(texture), false, stack.hasFoil());
         model.renderToBuffer(poseStack, consumer, packedLight, packedOverlay);

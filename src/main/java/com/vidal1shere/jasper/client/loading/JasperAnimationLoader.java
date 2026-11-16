@@ -19,7 +19,6 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.InactiveProfiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.api.distmarker.Dist;
@@ -45,29 +44,26 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String SUFFIX = ".animation.json";
     private static final float PIXEL = 1.0F / 16.0F;
-    private static final KeyframeJson.Units MODEL_UNITS = new KeyframeJson.Units(new Vector3f(1.0F, -1.0F, 1.0F), new Vector3f(Mth.DEG_TO_RAD));
     private static final Set<String> POSE_FIELDS = Set.of("blend_mode", "bone_modes", "look");
     private static final Set<String> LOOK_FIELDS = Set.of("pitch", "yaw");
     private static final Set<String> LOCATOR_FIELDS = Set.of("parent", "position");
 
-    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", null, MODEL_UNITS, Set.of("pivot"));
-    public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, MODEL_UNITS, POSE_FIELDS);
-    public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, MODEL_UNITS, POSE_FIELDS);
+    public static final JasperAnimationLoader ITEM = new JasperAnimationLoader("jasper/animation/item", "item", null, Set.of("pivot"));
+    public static final JasperAnimationLoader PLAYER = new JasperAnimationLoader("jasper/animation/player", "player", PlayerBones.ALL, POSE_FIELDS);
+    public static final JasperAnimationLoader ENTITY = new JasperAnimationLoader("jasper/animation/entity", "entity", null, POSE_FIELDS);
 
     private final String directory;
     private final String kind;
     @Nullable
     private final Set<String> bones;
-    private final KeyframeJson.Units units;
     private final Set<String> extraFields;
     private final Map<ResourceLocation, Supplier<JasperAnimation>> registered = new HashMap<>();
     private Map<ResourceLocation, JasperAnimation> loaded = Map.of();
 
-    public JasperAnimationLoader(String directory, String kind, @Nullable Set<String> bones, KeyframeJson.Units units, Set<String> extraFields) {
+    public JasperAnimationLoader(String directory, String kind, @Nullable Set<String> bones, Set<String> extraFields) {
         this.directory = directory;
         this.kind = kind;
         this.bones = bones;
-        this.units = units;
         this.extraFields = extraFields;
     }
 
@@ -95,7 +91,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     private JasperAnimation parse(JsonObject json, Map<String, Locator> fileLocators) {
         Map<String, Locator> locators = json.has("locators") ? locators(json.get("locators"), fileLocators) : new LinkedHashMap<>(fileLocators);
         Set<String> animated = bones == null ? null : Sets.union(bones, locators.keySet()).immutableCopy();
-        BoneTimeline keyframes = KeyframeJson.parse(json, animated, units, extraFields);
+        BoneTimeline keyframes = KeyframeJson.parse(json, animated, extraFields);
         float length = json.has("animation_length") ? GsonHelper.getAsFloat(json, "animation_length") : keyframes.lastKeyframe();
         float blendTicks = GsonHelper.getAsFloat(json, "blend_ticks", JasperAnimation.DEFAULT_BLEND_TICKS);
         BlendMode mode = json.has("blend_mode") ? mode(GsonHelper.getAsString(json, "blend_mode"), "blend_mode") : BlendMode.REPLACE;
@@ -113,7 +109,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
         Vector3f pivot = json.has("pivot") ? KeyframeJson.constantVector(json.get("pivot"), "pivot").mul(PIXEL) : JasperAnimation.NO_PIVOT;
         EffectTimeline effects = json.has("effects") ? EffectJson.parse(json.get("effects"), length, locators, bones) : EffectTimeline.EMPTY;
         checkParents(locators);
-        return new JasperAnimation(length, loop(json), blendTicks, keyframes, mode, Map.copyOf(boneModes), look, pivot, false, Map.copyOf(locators), effects);
+        return new JasperAnimation(length, loop(json), blendTicks, keyframes, mode, Map.copyOf(boneModes), look, pivot, Map.copyOf(locators), effects);
     }
 
     private static JasperAnimation.LoopType loop(JsonObject json) {
@@ -144,7 +140,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
                     throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + LOCATOR_FIELDS);
                 }
             }
-            Vector3f position = locator.has("position") ? KeyframeJson.constantVector(locator.get("position"), field + ".position").mul(units.position()) : new Vector3f();
+            Vector3f position = locator.has("position") ? KeyframeJson.constantVector(locator.get("position"), field + ".position").mul(KeyframeJson.POSITION_UNITS) : new Vector3f();
             locators.put(name, new Locator(GsonHelper.getAsString(locator, "parent"), PartPose.offset(position.x, position.y, position.z), true));
         }
         return locators;

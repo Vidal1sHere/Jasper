@@ -12,6 +12,7 @@ import com.vidal1shere.jasper.client.animation.keyframe.BoneKeyframe;
 import com.vidal1shere.jasper.client.molang.MolangParser;
 import com.vidal1shere.jasper.client.molang.MolangValue;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
@@ -26,14 +27,15 @@ import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
 public final class KeyframeJson {
-    public static final Set<String> ROOT_FIELDS = Set.of("format_version", "geckolib_format_version", "animations", "locators");
+    public static final Vector3f POSITION_UNITS = new Vector3f(1.0F, -1.0F, 1.0F);
+    private static final Vector3f ROTATION_UNITS = new Vector3f(Mth.DEG_TO_RAD);
+    private static final Vector3f SCALE_UNITS = new Vector3f(1.0F);
+
+    private static final Set<String> ROOT_FIELDS = Set.of("format_version", "geckolib_format_version", "animations", "locators");
     private static final Set<String> ANIMATION_FIELDS = Set.of("animation_length", "loop", "bones", "blend_ticks", "pre_animation", "locators", "effects");
     private static final Set<String> UNSUPPORTED = Set.of("sound_effects", "particle_effects", "timeline");
     private static final Set<String> CHANNELS = Set.of("position", "rotation", "scale");
     private static final Set<String> KEYFRAME_FIELDS = Set.of("vector", "pre", "post", "easing", "easingArgs", "lerp_mode");
-
-    public record Units(Vector3f position, Vector3f rotation) {
-    }
 
     public static void checkRoot(JsonObject root) {
         for (String field : root.keySet()) {
@@ -43,7 +45,7 @@ public final class KeyframeJson {
         }
     }
 
-    public static BoneTimeline parse(JsonObject json, @Nullable Set<String> bones, Units units, Set<String> extraFields) {
+    public static BoneTimeline parse(JsonObject json, @Nullable Set<String> bones, Set<String> extraFields) {
         for (String field : json.keySet()) {
             if (UNSUPPORTED.contains(field)) {
                 throw new JsonParseException(field + ": not supported yet");
@@ -67,9 +69,9 @@ public final class KeyframeJson {
                 }
             }
             BoneChannels animation = new BoneChannels(
-                    channel(channels, "position", field, units.position()),
-                    channel(channels, "rotation", field, units.rotation()),
-                    channel(channels, "scale", field, new Vector3f(1.0F))
+                    channel(channels, "position", field, POSITION_UNITS),
+                    channel(channels, "rotation", field, ROTATION_UNITS),
+                    channel(channels, "scale", field, SCALE_UNITS)
             );
             parsed.put(name, animation);
         }
@@ -77,7 +79,7 @@ public final class KeyframeJson {
     }
 
     public static Vector3f constantVector(JsonElement element, String field) {
-        MolangValue[] values = vector(element, field, new Vector3f(1.0F));
+        MolangValue[] values = vector(element, field, SCALE_UNITS);
         for (MolangValue value : values) {
             if (!value.isConstant()) {
                 throw new JsonParseException(field + ": expected numbers");

@@ -32,13 +32,14 @@ public final class LayerState {
         this.track = new AnimationTrack(loader);
     }
 
-    // Before the track updates, so a play once that just ended hands over to the driver instead of fading to nothing
+    // The client tick may update the track between the end of a play once and this call, so the fade to nothing it pushed is dropped
     public void drive(@Nullable ResourceLocation pick, double now) {
         if (played != null) {
             if (playAlive(now)) {
                 return;
             }
             endPlay();
+            track.dropEndFade();
         }
         if (handOver || !Objects.equals(pick, driven)) {
             track.set(pick, (long) now, 1.0F, false);
@@ -71,27 +72,9 @@ public final class LayerState {
         this.hand = hand;
     }
 
-    @Nullable
-    public ResourceLocation driven() {
-        return driven;
-    }
-
-    public void setDriven(@Nullable ResourceLocation driven) {
+    private void setDriven(@Nullable ResourceLocation driven) {
         this.driven = driven;
         driverSeen = true;
-    }
-
-    @Nullable
-    public ResourceLocation played() {
-        return played;
-    }
-
-    public long playedStart() {
-        return playedStart;
-    }
-
-    public PlayOptions playedOptions() {
-        return playedOptions;
     }
 
     public void play(@Nullable ResourceLocation animation, long startTick, PlayOptions options) {

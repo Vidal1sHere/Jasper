@@ -16,7 +16,6 @@ import com.vidal1shere.jasper.item.ItemAnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -54,19 +53,19 @@ public final class ItemAdapter {
         if (data == null || isSuppressed(entity)) {
             return false;
         }
-        return isActive(data.existing(target(hand), layer), entity.level().getGameTime() + partialTick);
+        return isActive(data.existing(AnimationTarget.of(hand), layer), entity.level().getGameTime() + partialTick);
     }
 
-    public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, MultiBufferSource buffer, float partialTick) {
+    public static void apply(LivingEntity entity, InteractionHand hand, PoseStack poseStack, float partialTick) {
         if (evaluate(entity, hand, true, partialTick) == 0) {
             return;
         }
         for (int f = 0; f < FRAMES.size(); f++) {
-            apply(FRAMES.frame(f), poseStack, buffer);
+            apply(FRAMES.frame(f), poseStack);
         }
         if (hasLocators()) {
             Matrix4f item = new Matrix4f(poseStack.last().pose());
-            LocatorCapture.capture(entity, target(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? item : null, UnaryOperator.identity(), PIXEL);
+            LocatorCapture.capture(entity, AnimationTarget.of(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? item : null, UnaryOperator.identity(), PIXEL);
         }
     }
 
@@ -77,7 +76,7 @@ public final class ItemAdapter {
         FRAMES.apply(parts::part, NOT_PARTS);
         if (hasLocators() && (firstPersonView || LocatorCapture.inLevel())) {
             Matrix4f root = new Matrix4f(poseStack.last().pose());
-            LocatorCapture.capture(entity, target(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? null : parts.matrix(root, bone), UnaryOperator.identity(), PIXEL);
+            LocatorCapture.capture(entity, AnimationTarget.of(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? null : parts.matrix(root, bone), UnaryOperator.identity(), PIXEL);
         }
     }
 
@@ -91,10 +90,10 @@ public final class ItemAdapter {
         for (Layer layer : JasperLayers.sorted()) {
             ItemAnimationDriver driver = item == null ? null : item.driver(layer);
             if (driver != null) {
-                data.track(target(hand), layer, JasperAnimationLoader.ITEM).drive(driver.pick(stack, entity, hand, displayContext), now);
+                data.track(AnimationTarget.of(hand), layer, JasperAnimationLoader.ITEM).drive(driver.pick(stack, entity, hand, displayContext), now);
                 continue;
             }
-            LayerState track = data.existing(target(hand), layer);
+            LayerState track = data.existing(AnimationTarget.of(hand), layer);
             if (track != null && track.driverSeen()) {
                 track.drive(null, now);
             }
@@ -106,7 +105,7 @@ public final class ItemAdapter {
             return 0;
         }
         firstPerson = firstPersonView;
-        return FRAMES.evaluate(entity, target(hand), hand, partialTick);
+        return FRAMES.evaluate(entity, AnimationTarget.of(hand), hand, partialTick);
     }
 
     private static boolean hasLocators() {
@@ -122,10 +121,6 @@ public final class ItemAdapter {
         return false;
     }
 
-    public static AnimationTarget target(InteractionHand hand) {
-        return AnimationTarget.of(hand);
-    }
-
     private static boolean isActive(@Nullable LayerState track, double now) {
         if (track == null) {
             return false;
@@ -134,18 +129,14 @@ public final class ItemAdapter {
         return track.track().isActive();
     }
 
-    private static void apply(TrackFrame frame, PoseStack poseStack, MultiBufferSource buffer) {
-        JasperAnimation top = null;
+    private static void apply(TrackFrame frame, PoseStack poseStack) {
         for (int i = 0; i < frame.size(); i++) {
-            top = transform(frame, i, i == 0 ? BLENDED : LAYER);
+            transform(frame, i, i == 0 ? BLENDED : LAYER);
             if (i > 0) {
                 BLENDED.lerp(LAYER, frame.blend(i));
             }
         }
         BLENDED.applyTo(poseStack);
-        if (top != null && top.debug() && frame.blend(frame.size() - 1) >= 1.0F) {
-            ItemTransform.debugRenderPivot(poseStack, buffer, top.pivot());
-        }
     }
 
     private static boolean isSuppressed(LivingEntity entity) {
@@ -157,8 +148,7 @@ public final class ItemAdapter {
         return false;
     }
 
-    @Nullable
-    private static JasperAnimation transform(TrackFrame frame, int index, ItemTransform accumulator) {
+    private static void transform(TrackFrame frame, int index, ItemTransform accumulator) {
         accumulator.reset();
         JasperAnimation animation = frame.animation(index);
         if (animation != null) {
@@ -168,6 +158,5 @@ public final class ItemAdapter {
             }
             accumulator.set(frame.pose(index, BONE), PIVOT);
         }
-        return animation;
     }
 }

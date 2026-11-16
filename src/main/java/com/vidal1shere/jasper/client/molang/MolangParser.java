@@ -374,8 +374,12 @@ public final class MolangParser {
     }
 
     private static int variableSlot(String name) {
-        String variable = strip(name, "variable.", "v.", "temp.", "t.");
-        return variable == null ? -1 : MolangContext.variableSlot(variable);
+        String variable = strip(name, "variable.", "v.");
+        if (variable != null) {
+            return MolangContext.variableSlot("variable." + variable);
+        }
+        String temp = strip(name, "temp.", "t.");
+        return temp == null ? -1 : MolangContext.variableSlot("temp." + temp);
     }
 
     private static String strip(String name, String... prefixes) {

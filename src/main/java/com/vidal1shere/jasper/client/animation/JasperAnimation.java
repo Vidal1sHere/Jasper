@@ -9,18 +9,18 @@ import org.joml.Vector3f;
 
 import java.util.Map;
 
-// The pivot and debug fields only mean something for the item, the one kind with no model to take pivots from
+// The pivot only means something for the item, the one kind with no model to take pivots from
 @OnlyIn(Dist.CLIENT)
-public record JasperAnimation(float length, LoopType loop, float blendTicks, BoneTimeline keyframes, BlendMode mode, Map<String, BlendMode> boneModes, Look look, Vector3f pivot, boolean debug, Map<String, Locator> locators, EffectTimeline effects) {
+public record JasperAnimation(float length, LoopType loop, float blendTicks, BoneTimeline keyframes, BlendMode mode, Map<String, BlendMode> boneModes, Look look, Vector3f pivot, Map<String, Locator> locators, EffectTimeline effects) {
     public static final Vector3f NO_PIVOT = new Vector3f();
     public static final float DEFAULT_BLEND_TICKS = 2.0F;
 
     public JasperAnimation(float length, LoopType loop, BoneTimeline keyframes) {
-        this(length, loop, DEFAULT_BLEND_TICKS, keyframes, BlendMode.REPLACE, Map.of(), Look.NONE, NO_PIVOT, false);
+        this(length, loop, DEFAULT_BLEND_TICKS, keyframes, BlendMode.REPLACE, Map.of(), Look.NONE, NO_PIVOT);
     }
 
-    public JasperAnimation(float length, LoopType loop, float blendTicks, BoneTimeline keyframes, BlendMode mode, Map<String, BlendMode> boneModes, Look look, Vector3f pivot, boolean debug) {
-        this(length, loop, blendTicks, keyframes, mode, boneModes, look, pivot, debug, Map.of(), EffectTimeline.EMPTY);
+    public JasperAnimation(float length, LoopType loop, float blendTicks, BoneTimeline keyframes, BlendMode mode, Map<String, BlendMode> boneModes, Look look, Vector3f pivot) {
+        this(length, loop, blendTicks, keyframes, mode, boneModes, look, pivot, Map.of(), EffectTimeline.EMPTY);
     }
 
     public float localTime(float elapsedSeconds) {

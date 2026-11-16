@@ -42,7 +42,7 @@ public final class VanillaAnimations {
                 }
             }
         }
-        return new JasperAnimation(definition.lengthInSeconds(), loop, JasperAnimation.DEFAULT_BLEND_TICKS, builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT, false);
+        return new JasperAnimation(definition.lengthInSeconds(), loop, JasperAnimation.DEFAULT_BLEND_TICKS, builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT);
     }
 
     private static BoneKeyframe keyframe(Keyframe keyframe, float offset) {

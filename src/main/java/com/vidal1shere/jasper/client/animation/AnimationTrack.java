@@ -86,6 +86,13 @@ public final class AnimationTrack {
         blends[0] = 1.0F;
     }
 
+    // A driver taking over at the end of a play once crossfades from its last frame, not from the fade to nothing update pushed there
+    public void dropEndFade() {
+        if (fades.size() > 1 && fades.getLast().entry().id() == null) {
+            fades.removeLast();
+        }
+    }
+
     public boolean isActive() {
         for (int i = 0; i < fades.size(); i++) {
             if (animation(i) != null) {

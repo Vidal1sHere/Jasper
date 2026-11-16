@@ -40,7 +40,7 @@ public abstract class ItemInHandRendererMixin {
             )
     )
     private void jasper$applyItemAnimation(AbstractClientPlayer player, float partialTicks, float pitch, InteractionHand hand, float swingProgress, ItemStack stack, float equippedProgress, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, CallbackInfo ci) {
-        ItemAdapter.apply(player, hand, poseStack, buffer, partialTicks);
+        ItemAdapter.apply(player, hand, poseStack, partialTicks);
     }
 
     @Inject(method = "renderHandsWithItems", at = @At("TAIL"))

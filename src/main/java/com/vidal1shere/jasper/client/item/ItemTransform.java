@@ -1,14 +1,10 @@
 package com.vidal1shere.jasper.client.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -59,20 +55,6 @@ public class ItemTransform {
         this.sx = Mth.lerp(t, this.sx, target.sx);
         this.sy = Mth.lerp(t, this.sy, target.sy);
         this.sz = Mth.lerp(t, this.sz, target.sz);
-    }
-
-    public static void debugRenderPivot(PoseStack poseStack, MultiBufferSource bufferSource, Vector3f pivot) {
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(1.0));
-        Matrix4f matrix = poseStack.last().pose();
-        float r = 1.0f, g = 0.0f, b = 0.0f, a = 1.0f;
-        float size = 1.0f;
-
-        consumer.addVertex(matrix, pivot.x() - size, pivot.y(), pivot.z()).setColor(r, g, b, a).setNormal(1, 0, 0);
-        consumer.addVertex(matrix, pivot.x() + size, pivot.y(), pivot.z()).setColor(r, g, b, a).setNormal(1, 0, 0);
-        consumer.addVertex(matrix, pivot.x(), pivot.y() - size, pivot.z()).setColor(r, g, b, a).setNormal(0, 1, 0);
-        consumer.addVertex(matrix, pivot.x(), pivot.y() + size, pivot.z()).setColor(r, g, b, a).setNormal(0, 1, 0);
-        consumer.addVertex(matrix, pivot.x(), pivot.y(), pivot.z() - size).setColor(r, g, b, a).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, pivot.x(), pivot.y(), pivot.z() + size).setColor(r, g, b, a).setNormal(0, 0, 1);
     }
 
     public void applyTo(PoseStack poseStack) {
