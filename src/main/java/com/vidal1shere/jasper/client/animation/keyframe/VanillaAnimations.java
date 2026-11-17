@@ -1,6 +1,5 @@
 package com.vidal1shere.jasper.client.animation.keyframe;
 
-import com.vidal1shere.jasper.client.animation.BlendMode;
 import com.vidal1shere.jasper.client.animation.JasperAnimation;
 import net.minecraft.client.animation.AnimationChannel;
 import net.minecraft.client.animation.AnimationDefinition;
@@ -23,7 +22,11 @@ public final class VanillaAnimations {
     }
 
     public static JasperAnimation convert(AnimationDefinition definition, JasperAnimation.LoopType loop, JasperAnimation.Look look) {
-        BoneTimeline.Builder builder = BoneTimeline.builder();
+        return builder(definition, loop, look).build();
+    }
+
+    public static JasperAnimation.Builder builder(AnimationDefinition definition, JasperAnimation.LoopType loop, JasperAnimation.Look look) {
+        JasperAnimation.Builder builder = JasperAnimation.builder(loop).length(definition.lengthInSeconds()).look(look);
         for (Map.Entry<String, List<AnimationChannel>> bone : definition.boneAnimations().entrySet()) {
             for (AnimationChannel channel : bone.getValue()) {
                 AnimationChannel.Target target = channel.target();
@@ -42,7 +45,7 @@ public final class VanillaAnimations {
                 }
             }
         }
-        return new JasperAnimation(definition.lengthInSeconds(), loop, JasperAnimation.DEFAULT_BLEND_TICKS, builder.build(), BlendMode.REPLACE, Map.of(), look, JasperAnimation.NO_PIVOT);
+        return builder;
     }
 
     private static BoneKeyframe keyframe(Keyframe keyframe, float offset) {
