@@ -13,6 +13,8 @@ import com.vidal1shere.jasper.client.animation.keyframe.BoneTimeline;
 import com.vidal1shere.jasper.client.animation.locator.Locator;
 import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
 import com.vidal1shere.jasper.client.player.PlayerBones;
+import com.vidal1shere.jasper.util.JsonFields;
+import com.vidal1shere.jasper.util.EnumNames;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -135,11 +137,7 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
                 throw new JsonParseException(field + ": a locator cannot have the name of a bone");
             }
             JsonObject locator = GsonHelper.convertToJsonObject(entry.getValue(), field);
-            for (String key : locator.keySet()) {
-                if (!LOCATOR_FIELDS.contains(key)) {
-                    throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + LOCATOR_FIELDS);
-                }
-            }
+            JsonFields.check(locator, LOCATOR_FIELDS, field);
             Vector3f position = locator.has("position") ? KeyframeJson.constantVector(locator.get("position"), field + ".position").mul(KeyframeJson.POSITION_UNITS) : new Vector3f();
             locators.put(name, new Locator(GsonHelper.getAsString(locator, "parent"), PartPose.offset(position.x, position.y, position.z), true));
         }
@@ -166,19 +164,15 @@ public final class JasperAnimationLoader extends SimplePreparableReloadListener<
     }
 
     private static BlendMode mode(String name, String field) {
-        BlendMode mode = BlendMode.byName(name);
+        BlendMode mode = EnumNames.byName(BlendMode.class, name);
         if (mode == null) {
-            throw new JsonParseException(field + ": expected 'replace' or 'additive', got '" + name + "'");
+            throw new JsonParseException(field + ": expected one of " + EnumNames.names(BlendMode.class) + ", got '" + name + "'");
         }
         return mode;
     }
 
     private static JasperAnimation.Look look(JsonObject json) {
-        for (String field : json.keySet()) {
-            if (!LOOK_FIELDS.contains(field)) {
-                throw new JsonParseException("look." + field + ": unknown field, expected one of " + LOOK_FIELDS);
-            }
-        }
+        JsonFields.check(json, LOOK_FIELDS, "look");
         return new JasperAnimation.Look(GsonHelper.getAsBoolean(json, "pitch", false), GsonHelper.getAsBoolean(json, "yaw", false));
     }
 

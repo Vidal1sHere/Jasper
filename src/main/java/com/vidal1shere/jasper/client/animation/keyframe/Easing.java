@@ -162,21 +162,21 @@ public enum Easing {
     }
 
     private static float bounceOut(float t, float bounciness) {
-        float damping = Mth.clamp(bounciness, 0.0F, 1.0F) + 0.5F;
-        float value;
         if (t < 1.0F / 2.75F) {
-            value = 7.5625F * t * t;
-            return value;
-        } else if (t < 2.0F / 2.75F) {
+            return 7.5625F * t * t;
+        }
+        float bounce;
+        if (t < 2.0F / 2.75F) {
             t -= 1.5F / 2.75F;
-            value = 1.0F - (1.0F - (7.5625F * t * t + 0.75F)) * damping;
+            bounce = 0.75F;
         } else if (t < 2.5F / 2.75F) {
             t -= 2.25F / 2.75F;
-            value = 1.0F - (1.0F - (7.5625F * t * t + 0.9375F)) * damping;
+            bounce = 0.9375F;
         } else {
             t -= 2.625F / 2.75F;
-            value = 1.0F - (1.0F - (7.5625F * t * t + 0.984375F)) * damping;
+            bounce = 0.984375F;
         }
-        return value;
+        float damping = Mth.clamp(bounciness, 0.0F, 1.0F) + 0.5F;
+        return 1.0F - (1.0F - (7.5625F * t * t + bounce)) * damping;
     }
 }

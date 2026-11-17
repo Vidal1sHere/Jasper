@@ -7,7 +7,7 @@ import com.vidal1shere.jasper.client.animation.TrackFrame;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
 import com.vidal1shere.jasper.client.attachment.LocatorData;
 import com.vidal1shere.jasper.layer.AnimationTarget;
-import net.minecraft.client.Minecraft;
+import com.vidal1shere.jasper.util.ClientView;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.world.entity.Entity;
@@ -65,7 +65,7 @@ public final class LocatorCapture {
         }
         CAPTURED.clear();
         LocatorData data = null;
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        Vec3 camera = ClientView.camera();
         for (int f = 0; f < count; f++) {
             TrackFrame frame = frames.get(f);
             for (int i = 0; i < frame.size(); i++) {

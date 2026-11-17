@@ -6,10 +6,13 @@ import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.layer.PlayOptions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
+@OnlyIn(Dist.CLIENT)
 public final class LayerState {
     private final JasperAnimationLoader loader;
     private final AnimationTrack track;

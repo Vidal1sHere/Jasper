@@ -13,6 +13,7 @@ import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
 import com.vidal1shere.jasper.layer.PlayOptions;
+import com.vidal1shere.jasper.util.EnumNames;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -20,14 +21,11 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
-
-import java.util.Locale;
 
 @EventBusSubscriber(modid = Jasper.MOD_ID)
 public final class JasperCommands {
@@ -40,7 +38,7 @@ public final class JasperCommands {
         var playLayer = Commands.argument("layer", ResourceLocationArgument.id()).suggests(LAYERS);
         var stopLayer = Commands.argument("layer", ResourceLocationArgument.id()).suggests(LAYERS);
         for (AnimationTarget target : AnimationTarget.values()) {
-            String name = target.name().toLowerCase(Locale.ROOT);
+            String name = EnumNames.name(target);
             playLayer.then(Commands.literal(name).then(Commands.argument("animation", ResourceLocationArgument.id())
                     .executes(context -> play(context, target))
                     .then(Commands.argument("speed", FloatArgumentType.floatArg(0.01F)).executes(context -> play(context, target))
@@ -58,7 +56,7 @@ public final class JasperCommands {
         ResourceLocation animation = ResourceLocationArgument.getId(context, "animation");
         float speed = has(context, "speed") ? FloatArgumentType.getFloat(context, "speed") : 1.0F;
         boolean loop = has(context, "loop") && BoolArgumentType.getBool(context, "loop");
-        PlayOptions options = new PlayOptions(speed, target == AnimationTarget.OFF_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, loop);
+        PlayOptions options = new PlayOptions(speed, target.hand(), loop);
         int count = 0;
         for (Entity entity : EntityArgument.getEntities(context, "entities")) {
             if (entity instanceof LivingEntity living) {
@@ -67,7 +65,7 @@ public final class JasperCommands {
             }
         }
         int played = count;
-        context.getSource().sendSuccess(() -> Component.literal("Playing " + animation + " on " + layer.id() + " (" + target.name().toLowerCase(Locale.ROOT) + (loop ? ", looped" : "") + (layer.policy().persistent() ? ", saved" : "") + ") for " + played + " entities"), false);
+        context.getSource().sendSuccess(() -> Component.literal("Playing " + animation + " on " + layer.id() + " (" + EnumNames.name(target) + (loop ? ", looped" : "") + (layer.policy().persistent() ? ", saved" : "") + ") for " + played + " entities"), false);
         return played;
     }
 

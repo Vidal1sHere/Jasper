@@ -12,13 +12,13 @@ import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.client.effect.spec.Blend;
 import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import com.vidal1shere.jasper.client.effect.spec.Light;
+import com.vidal1shere.jasper.util.EnumNames;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
-import net.minecraft.util.StringRepresentable;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -83,21 +83,10 @@ public record TrailEffect(List<String> locators, float lifetime, float interval,
     }
 
     // Entity rings follow the entity position, not its rotation
-    public enum Space implements StringRepresentable {
-        WORLD("world"),
-        ENTITY("entity");
+    public enum Space {
+        WORLD,
+        ENTITY;
 
-        public static final Codec<Space> CODEC = StringRepresentable.fromEnum(Space::values);
-
-        private final String name;
-
-        Space(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getSerializedName() {
-            return name;
-        }
+        public static final Codec<Space> CODEC = EnumNames.codec(Space.class);
     }
 }

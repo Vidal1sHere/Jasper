@@ -11,13 +11,12 @@ import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.effect.AnimationEffect;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
-import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.client.molang.QuerySource;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.LayerKey;
+import com.vidal1shere.jasper.util.ClientView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -112,7 +111,7 @@ public final class ClientEffects {
         track.update(now);
         AnimationTrack.Entry entry = track.entry(track.size() - 1);
         float elapsed = entry.elapsed(now);
-        boolean firstPerson = entity instanceof LivingEntity living && BuiltinQueries.isFirstPerson(living);
+        boolean firstPerson = ClientView.isFirstPerson(entity);
         float from;
         if (entry == layer.firedEntry()) {
             from = layer.firedTime();
@@ -146,8 +145,7 @@ public final class ClientEffects {
     }
 
     private static boolean visible(Entity entity, AnimationTarget target, EffectEntry effect, long now) {
-        Minecraft minecraft = Minecraft.getInstance();
-        boolean firstPerson = entity == minecraft.player && entity == minecraft.getCameraEntity() && minecraft.options.getCameraType().isFirstPerson();
+        boolean firstPerson = entity == Minecraft.getInstance().player && ClientView.isFirstPerson(entity);
         if (target == AnimationTarget.MODEL) {
             return !firstPerson;
         }

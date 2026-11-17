@@ -13,6 +13,7 @@ import com.vidal1shere.jasper.client.entity.AnimatedModel;
 import com.vidal1shere.jasper.client.item.model.AnimatedItemModel;
 import com.vidal1shere.jasper.client.player.PlayerBones;
 import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.util.ClientView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.PlayerModel;
@@ -44,8 +45,8 @@ import java.util.function.Consumer;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
 public final class Afterimages {
-    private static final RenderType ADDITIVE = renderType("jasper_afterimage_additive", RenderStateShard.LIGHTNING_TRANSPARENCY);
-    private static final RenderType TRANSLUCENT = renderType("jasper_afterimage_translucent", RenderStateShard.TRANSLUCENT_TRANSPARENCY);
+    private static final RenderType ADDITIVE = renderType("jasper_afterimage_additive", Blend.ADDITIVE);
+    private static final RenderType TRANSLUCENT = renderType("jasper_afterimage_translucent", Blend.TRANSLUCENT);
 
     private static final List<PlayingAfterimage> ACTIVE = new ArrayList<>();
     private static final List<Copy> COPIES = new ArrayList<>();
@@ -102,7 +103,7 @@ public final class Afterimages {
 
     private static void capture(LivingEntity entity, AnimationTarget target, boolean hand, int packedLight, ResourceLocation texture, Consumer<AfterimageEffect> record) {
         double now = entity.level().getGameTime() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        Vec3 camera = ClientView.camera();
         for (PlayingAfterimage afterimage : ACTIVE) {
             if (!matches(afterimage, entity, target, hand) || !afterimage.due(now)) {
                 continue;
@@ -122,8 +123,9 @@ public final class Afterimages {
 
     private static void renderBone(EntityModel<?> model, String bone, PoseStack poseStack, int packedLight) {
         if (model instanceof PlayerModel<?> player) {
-            for (ModelPart part : playerParts(player, bone)) {
-                part.render(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY);
+            for (String part : bone.equals(PlayerBones.ROOT) ? PlayerBones.PARTS : List.of(bone)) {
+                renderPlayerPart(PlayerBones.part(player, part), poseStack, packedLight);
+                renderPlayerPart(PlayerBones.overlay(player, part), poseStack, packedLight);
             }
         } else if (model instanceof AnimatedModel<?> animated) {
             renderChain(animated.chain(bone), poseStack, packedLight);
@@ -142,18 +144,10 @@ public final class Afterimages {
         poseStack.popPose();
     }
 
-    private static List<ModelPart> playerParts(PlayerModel<?> model, String bone) {
-        return switch (bone) {
-            case PlayerBones.ROOT -> List.of(model.head, model.hat, model.body, model.jacket, model.rightArm, model.rightSleeve, model.leftArm, model.leftSleeve,
-                    model.rightLeg, model.rightPants, model.leftLeg, model.leftPants);
-            case PlayerBones.HEAD -> List.of(model.head, model.hat);
-            case PlayerBones.TORSO -> List.of(model.body, model.jacket);
-            case PlayerBones.RIGHT_ARM -> List.of(model.rightArm, model.rightSleeve);
-            case PlayerBones.LEFT_ARM -> List.of(model.leftArm, model.leftSleeve);
-            case PlayerBones.RIGHT_LEG -> List.of(model.rightLeg, model.rightPants);
-            case PlayerBones.LEFT_LEG -> List.of(model.leftLeg, model.leftPants);
-            default -> List.of();
-        };
+    private static void renderPlayerPart(@Nullable ModelPart part, PoseStack poseStack, int packedLight) {
+        if (part != null) {
+            part.render(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY);
+        }
     }
 
     @SubscribeEvent
@@ -195,7 +189,7 @@ public final class Afterimages {
             return;
         }
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        Vec3 camera = ClientView.camera();
         for (Map.Entry<RenderType, List<Copy>> batch : batches.entrySet()) {
             VertexConsumer consumer = buffers.getBuffer(batch.getKey());
             for (Copy copy : batch.getValue()) {
@@ -237,14 +231,14 @@ public final class Afterimages {
     }
 
     // No depth write, so the copies of one effect do not hide each other
-    private static RenderType renderType(String name, RenderStateShard.TransparencyStateShard transparency) {
+    private static RenderType renderType(String name, Blend blend) {
         return RenderType.create(name, DefaultVertexFormat.POSITION_COLOR_LIGHTMAP, VertexFormat.Mode.QUADS, 1536, false, true,
                 RenderType.CompositeState.builder()
                         .setShaderState(RenderStateShard.POSITION_COLOR_LIGHTMAP_SHADER)
                         .setLightmapState(RenderStateShard.LIGHTMAP)
                         .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
                         .setWriteMaskState(RenderStateShard.COLOR_WRITE)
-                        .setTransparencyState(transparency)
+                        .setTransparencyState(blend.transparency())
                         .createCompositeState(false));
     }
 

@@ -4,12 +4,15 @@ import com.vidal1shere.jasper.client.loading.JasperAnimationLoader;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.Layer;
 import com.vidal1shere.jasper.layer.LayerKey;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+@OnlyIn(Dist.CLIENT)
 public final class ClientAnimationData {
     private final Map<LayerKey, LayerState> tracks = new HashMap<>();
 

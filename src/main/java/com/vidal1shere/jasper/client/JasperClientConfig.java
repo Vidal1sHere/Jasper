@@ -1,7 +1,10 @@
 package com.vidal1shere.jasper.client;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+@OnlyIn(Dist.CLIENT)
 public final class JasperClientConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

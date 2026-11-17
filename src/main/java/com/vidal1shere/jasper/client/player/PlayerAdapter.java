@@ -9,6 +9,7 @@ import com.vidal1shere.jasper.client.molang.MolangContext;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.Layer;
 import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
@@ -81,15 +82,12 @@ public final class PlayerAdapter {
 
     public static void captureModelLocators(LivingEntity entity, PlayerModel<?> model, PoseStack poseStack) {
         Matrix4f root = new Matrix4f(poseStack.last().pose());
-        LocatorCapture.capture(entity, AnimationTarget.MODEL, FRAMES.frames(), FRAMES.size(), bone -> switch (bone) {
-            case PlayerBones.ROOT -> root;
-            case PlayerBones.TORSO -> LocatorCapture.part(root, model.body);
-            case PlayerBones.HEAD -> LocatorCapture.part(root, model.head);
-            case PlayerBones.RIGHT_ARM -> LocatorCapture.part(root, model.rightArm);
-            case PlayerBones.LEFT_ARM -> LocatorCapture.part(root, model.leftArm);
-            case PlayerBones.RIGHT_LEG -> LocatorCapture.part(root, model.rightLeg);
-            case PlayerBones.LEFT_LEG -> LocatorCapture.part(root, model.leftLeg);
-            default -> null;
+        LocatorCapture.capture(entity, AnimationTarget.MODEL, FRAMES.frames(), FRAMES.size(), bone -> {
+            if (bone.equals(PlayerBones.ROOT)) {
+                return root;
+            }
+            ModelPart part = PlayerBones.part(model, bone);
+            return part == null ? null : LocatorCapture.part(root, part);
         }, PlayerBones::counterpart, MODEL_UNIT);
     }
 
@@ -102,12 +100,9 @@ public final class PlayerAdapter {
     public static void applyModel(PlayerModel<?> model) {
         for (int i = 0; i < FRAMES.size(); i++) {
             TrackFrame frame = FRAMES.frame(i);
-            frame.apply(PlayerBones.HEAD, model.head, model.hat);
-            frame.apply(PlayerBones.TORSO, model.body, model.jacket);
-            frame.apply(PlayerBones.RIGHT_ARM, model.rightArm, model.rightSleeve);
-            frame.apply(PlayerBones.LEFT_ARM, model.leftArm, model.leftSleeve);
-            frame.apply(PlayerBones.RIGHT_LEG, model.rightLeg, model.rightPants);
-            frame.apply(PlayerBones.LEFT_LEG, model.leftLeg, model.leftPants);
+            for (String bone : PlayerBones.PARTS) {
+                frame.apply(bone, PlayerBones.part(model, bone), PlayerBones.overlay(model, bone));
+            }
         }
     }
 }

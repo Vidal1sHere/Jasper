@@ -2,70 +2,58 @@ package com.vidal1shere.jasper.client.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.vidal1shere.jasper.client.animation.pose.BonePose;
-import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
-public class ItemTransform {
-    private float tx, ty, tz;
+public final class ItemTransform {
+    private static final Quaternionf IDENTITY = new Quaternionf();
+
+    private final Vector3f translation = new Vector3f();
     private final Quaternionf rotation = new Quaternionf();
-    private float sx = 1.0f, sy = 1.0f, sz = 1.0f;
+    private final Vector3f scale = new Vector3f(1.0F);
+    private final Vector3f moved = new Vector3f();
 
     public void reset() {
-        this.tx = 0.0f;
-        this.ty = 0.0f;
-        this.tz = 0.0f;
-        this.rotation.identity();
-        this.sx = 1.0f;
-        this.sy = 1.0f;
-        this.sz = 1.0f;
+        translation.zero();
+        rotation.identity();
+        scale.set(1.0F);
     }
 
     // The pose position is in pixels, the pivot in blocks
     public void set(BonePose pose, Vector3f pivot) {
-        this.tx = pose.position.x / 16.0f;
-        this.ty = pose.position.y / 16.0f;
-        this.tz = pose.position.z / 16.0f;
-        this.rotation.identity().rotateX(pose.rotation.x).rotateY(pose.rotation.y).rotateZ(pose.rotation.z);
-        this.sx = pose.scale.x;
-        this.sy = pose.scale.y;
-        this.sz = pose.scale.z;
+        translation.set(pose.position).div(16.0F);
+        rotation.identity().rotateX(pose.rotation.x).rotateY(pose.rotation.y).rotateZ(pose.rotation.z);
+        scale.set(pose.scale);
         bakePivot(pivot);
     }
 
     // Baked into the translation so two accumulators can be blended
     private void bakePivot(Vector3f pivot) {
-        if (pivot.x() == 0.0f && pivot.y() == 0.0f && pivot.z() == 0.0f) {
+        if (pivot.x == 0.0F && pivot.y == 0.0F && pivot.z == 0.0F) {
             return;
         }
-        Vector3f moved = this.rotation.transform(new Vector3f(pivot.x() * this.sx, pivot.y() * this.sy, pivot.z() * this.sz));
-        this.tx += pivot.x() - moved.x();
-        this.ty += pivot.y() - moved.y();
-        this.tz += pivot.z() - moved.z();
+        rotation.transform(moved.set(pivot).mul(scale));
+        translation.add(pivot.x - moved.x, pivot.y - moved.y, pivot.z - moved.z);
     }
 
     public void lerp(ItemTransform target, float t) {
-        this.tx = Mth.lerp(t, this.tx, target.tx);
-        this.ty = Mth.lerp(t, this.ty, target.ty);
-        this.tz = Mth.lerp(t, this.tz, target.tz);
-        this.rotation.slerp(target.rotation, t);
-        this.sx = Mth.lerp(t, this.sx, target.sx);
-        this.sy = Mth.lerp(t, this.sy, target.sy);
-        this.sz = Mth.lerp(t, this.sz, target.sz);
+        translation.lerp(target.translation, t);
+        rotation.slerp(target.rotation, t);
+        scale.lerp(target.scale, t);
     }
 
     public void applyTo(PoseStack poseStack) {
-        if (this.tx != 0.0f || this.ty != 0.0f || this.tz != 0.0f) {
-            poseStack.translate(this.tx, this.ty, this.tz);
+        if (translation.x != 0.0F || translation.y != 0.0F || translation.z != 0.0F) {
+            poseStack.translate(translation.x, translation.y, translation.z);
         }
-        if (!this.rotation.equals(new Quaternionf())) {
-            poseStack.mulPose(this.rotation);
+        if (!rotation.equals(IDENTITY)) {
+            poseStack.mulPose(rotation);
         }
-        if (this.sx != 1.0f || this.sy != 1.0f || this.sz != 1.0f) {
-            poseStack.scale(this.sx, this.sy, this.sz);
+        if (scale.x != 1.0F || scale.y != 1.0F || scale.z != 1.0F) {
+            poseStack.scale(scale.x, scale.y, scale.z);
         }
     }
 }

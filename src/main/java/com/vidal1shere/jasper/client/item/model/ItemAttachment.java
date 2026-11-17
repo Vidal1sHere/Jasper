@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.vidal1shere.jasper.util.JsonFields;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.neoforged.api.distmarker.Dist;
@@ -18,11 +19,7 @@ public record ItemAttachment(ResourceLocation model, String bone, Vector3f trans
     private static final Set<String> FIELDS = Set.of("model", "bone", "translation", "rotation", "scale");
 
     static ItemAttachment read(JsonObject json, String field) {
-        for (String key : json.keySet()) {
-            if (!FIELDS.contains(key)) {
-                throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + FIELDS);
-            }
-        }
+        JsonFields.check(json, FIELDS, field);
         ResourceLocation model = ResourceLocation.tryParse(GsonHelper.getAsString(json, "model"));
         if (model == null) {
             throw new JsonParseException(field + ".model: invalid id");

@@ -7,6 +7,7 @@ import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
 import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import com.vidal1shere.jasper.client.effect.spec.ParticleShape;
+import com.vidal1shere.jasper.util.ClientView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -53,7 +54,7 @@ public record ParticleEffect(ParticleOptions particle, int count, Vec3 spread, f
             return;
         }
         boolean force = particle.getType().getOverrideLimiter();
-        if (!force && minecraft.gameRenderer.getMainCamera().getPosition().distanceToSqr(at) > MAX_DISTANCE_SQUARED) {
+        if (!force && ClientView.camera().distanceToSqr(at) > MAX_DISTANCE_SQUARED) {
             return;
         }
         ParticleStatus status = minecraft.options.particles().get();

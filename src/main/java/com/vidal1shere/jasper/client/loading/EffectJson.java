@@ -13,6 +13,7 @@ import com.vidal1shere.jasper.client.effect.EffectCodecs;
 import com.vidal1shere.jasper.client.effect.timeline.EffectEntry;
 import com.vidal1shere.jasper.client.effect.timeline.EffectTimeline;
 import com.vidal1shere.jasper.client.effect.timeline.MolangEffect;
+import com.vidal1shere.jasper.util.JsonFields;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.neoforged.api.distmarker.Dist;
@@ -73,11 +74,7 @@ public final class EffectJson {
         }
         Set<String> allowed = new HashSet<>(COMMON_FIELDS);
         codec.keys(JsonOps.INSTANCE).forEach(key -> allowed.add(key.getAsString()));
-        for (String key : json.keySet()) {
-            if (!allowed.contains(key)) {
-                throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + allowed);
-            }
-        }
+        JsonFields.check(json, allowed, field);
         EffectCodecs.Collected<AnimationEffect> decoded = EffectCodecs.collect(() -> codec.decode(JsonOps.INSTANCE, JsonOps.INSTANCE.getMap(json).getOrThrow())
                 .getOrThrow(message -> new JsonParseException(field + ": " + message)));
         AnimationEffect effect = decoded.value();

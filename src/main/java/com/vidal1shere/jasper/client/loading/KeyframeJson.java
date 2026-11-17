@@ -1,5 +1,6 @@
 package com.vidal1shere.jasper.client.loading;
 
+import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,6 +12,7 @@ import com.vidal1shere.jasper.client.animation.keyframe.Easing;
 import com.vidal1shere.jasper.client.animation.keyframe.BoneKeyframe;
 import com.vidal1shere.jasper.client.molang.MolangParser;
 import com.vidal1shere.jasper.client.molang.MolangValue;
+import com.vidal1shere.jasper.util.JsonFields;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
@@ -38,22 +40,16 @@ public final class KeyframeJson {
     private static final Set<String> KEYFRAME_FIELDS = Set.of("vector", "pre", "post", "easing", "easingArgs", "lerp_mode");
 
     public static void checkRoot(JsonObject root) {
-        for (String field : root.keySet()) {
-            if (!ROOT_FIELDS.contains(field)) {
-                throw new JsonParseException(field + ": unknown field, expected one of " + ROOT_FIELDS);
-            }
-        }
+        JsonFields.check(root, ROOT_FIELDS, "");
     }
 
     public static BoneTimeline parse(JsonObject json, @Nullable Set<String> bones, Set<String> extraFields) {
-        for (String field : json.keySet()) {
-            if (UNSUPPORTED.contains(field)) {
+        for (String field : UNSUPPORTED) {
+            if (json.has(field)) {
                 throw new JsonParseException(field + ": not supported yet");
             }
-            if (!ANIMATION_FIELDS.contains(field) && !extraFields.contains(field)) {
-                throw new JsonParseException(field + ": unknown field");
-            }
         }
+        JsonFields.check(json, Sets.union(ANIMATION_FIELDS, extraFields), "");
         JsonObject bonesJson = GsonHelper.getAsJsonObject(json, "bones");
         Map<String, BoneChannels> parsed = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> bone : bonesJson.entrySet()) {
@@ -139,11 +135,7 @@ public final class KeyframeJson {
             return;
         }
         JsonObject object = value.getAsJsonObject();
-        for (String key : object.keySet()) {
-            if (!KEYFRAME_FIELDS.contains(key)) {
-                throw new JsonParseException(field + "." + key + ": unknown field, expected one of " + KEYFRAME_FIELDS);
-            }
-        }
+        JsonFields.check(object, KEYFRAME_FIELDS, field);
         Easing easing = easing(object, field);
         float argument = easingArgument(object, field, easing);
         if (object.has("pre") || object.has("post")) {

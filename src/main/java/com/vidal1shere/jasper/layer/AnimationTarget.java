@@ -10,4 +10,9 @@ public enum AnimationTarget {
     public static AnimationTarget of(InteractionHand hand) {
         return hand == InteractionHand.MAIN_HAND ? MAIN_HAND : OFF_HAND;
     }
+
+    // The model plays on the main hand side
+    public InteractionHand hand() {
+        return this == OFF_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+    }
 }

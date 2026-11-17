@@ -1,25 +1,19 @@
 package com.vidal1shere.jasper.client.effect.spec;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.util.StringRepresentable;
+import com.vidal1shere.jasper.util.EnumNames;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
-public enum Blend implements StringRepresentable {
-    ADDITIVE("additive"),
-    TRANSLUCENT("translucent");
+public enum Blend {
+    ADDITIVE,
+    TRANSLUCENT;
 
-    public static final Codec<Blend> CODEC = StringRepresentable.fromEnum(Blend::values);
+    public static final Codec<Blend> CODEC = EnumNames.codec(Blend.class);
 
-    private final String name;
-
-    Blend(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String getSerializedName() {
-        return name;
+    public RenderStateShard.TransparencyStateShard transparency() {
+        return this == ADDITIVE ? RenderStateShard.LIGHTNING_TRANSPARENCY : RenderStateShard.TRANSLUCENT_TRANSPARENCY;
     }
 }

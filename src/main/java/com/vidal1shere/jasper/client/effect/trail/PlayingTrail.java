@@ -4,10 +4,8 @@ import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.attachment.LocatorData;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.PlayingEffect;
-import com.vidal1shere.jasper.client.molang.BuiltinQueries;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -33,7 +31,7 @@ final class PlayingTrail implements PlayingEffect {
         this.effect = effect;
         this.entity = context.entity();
         this.target = context.target();
-        this.hand = target != AnimationTarget.MODEL && entity instanceof LivingEntity living && BuiltinQueries.isFirstPerson(living);
+        this.hand = context.inHandPass();
         this.persist = context.persist();
         this.anchor = entity.position();
     }

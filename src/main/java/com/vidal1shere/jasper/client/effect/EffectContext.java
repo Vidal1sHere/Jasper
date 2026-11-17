@@ -3,6 +3,7 @@ package com.vidal1shere.jasper.client.effect;
 import com.vidal1shere.jasper.client.ClientAttachments;
 import com.vidal1shere.jasper.client.attachment.LocatorData;
 import com.vidal1shere.jasper.layer.AnimationTarget;
+import com.vidal1shere.jasper.util.ClientView;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -60,6 +61,11 @@ public final class EffectContext {
 
     public boolean bound() {
         return bound;
+    }
+
+    // A hand target seen from its own eyes is recorded and drawn in the hand pass
+    public boolean inHandPass() {
+        return target != AnimationTarget.MODEL && ClientView.isFirstPerson(entity);
     }
 
     // A following effect falls back to the entity while its locator is not rendered (first person, off screen)

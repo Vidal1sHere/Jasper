@@ -8,6 +8,8 @@ import com.vidal1shere.jasper.client.animation.locator.LocatorCapture;
 import com.vidal1shere.jasper.client.effect.EffectContext;
 import com.vidal1shere.jasper.client.effect.spec.Blend;
 import com.vidal1shere.jasper.client.effect.spec.Light;
+import com.vidal1shere.jasper.util.ClientView;
+import com.vidal1shere.jasper.util.EnumNames;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -25,6 +27,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,10 +39,10 @@ import java.util.function.BiFunction;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
 public final class Trails {
-    private static final RenderType ADDITIVE = renderType("jasper_trail_additive", RenderStateShard.LIGHTNING_TRANSPARENCY, null);
-    private static final RenderType TRANSLUCENT = renderType("jasper_trail_translucent", RenderStateShard.TRANSLUCENT_TRANSPARENCY, null);
+    private static final RenderType ADDITIVE = renderType("jasper_trail_additive", Blend.ADDITIVE, null);
+    private static final RenderType TRANSLUCENT = renderType("jasper_trail_translucent", Blend.TRANSLUCENT, null);
     private static final BiFunction<ResourceLocation, Blend, RenderType> TEXTURED = Util.memoize((texture, blend) -> renderType(
-            "jasper_trail_" + blend.getSerializedName() + "_" + texture.toDebugFileName(), transparency(blend), texture));
+            "jasper_trail_" + EnumNames.name(blend) + "_" + texture.toDebugFileName(), blend, texture));
 
     private static final List<PlayingTrail> ACTIVE = new ArrayList<>();
 
@@ -104,7 +107,7 @@ public final class Trails {
             return;
         }
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        Vec3 camera = ClientView.camera();
         for (Map.Entry<RenderType, List<PlayingTrail>> batch : batches.entrySet()) {
             VertexConsumer consumer = buffers.getBuffer(batch.getKey());
             boolean textured = batch.getKey() != ADDITIVE && batch.getKey() != TRANSLUCENT;
@@ -234,18 +237,14 @@ public final class Trails {
         return effect.blend() == Blend.ADDITIVE ? ADDITIVE : TRANSLUCENT;
     }
 
-    private static RenderStateShard.TransparencyStateShard transparency(Blend blend) {
-        return blend == Blend.ADDITIVE ? RenderStateShard.LIGHTNING_TRANSPARENCY : RenderStateShard.TRANSLUCENT_TRANSPARENCY;
-    }
-
     // No culling, so the ribbon shows from both sides, and no depth write, so trails do not hide each other
-    private static RenderType renderType(String name, RenderStateShard.TransparencyStateShard transparency, ResourceLocation texture) {
+    private static RenderType renderType(String name, Blend blend, @Nullable ResourceLocation texture) {
         RenderType.CompositeState.CompositeStateBuilder state = RenderType.CompositeState.builder()
                 .setLightmapState(RenderStateShard.LIGHTMAP)
                 .setCullState(RenderStateShard.NO_CULL)
                 .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
                 .setWriteMaskState(RenderStateShard.COLOR_WRITE)
-                .setTransparencyState(transparency);
+                .setTransparencyState(blend.transparency());
         if (texture == null) {
             state.setShaderState(RenderStateShard.POSITION_COLOR_LIGHTMAP_SHADER);
             return RenderType.create(name, DefaultVertexFormat.POSITION_COLOR_LIGHTMAP, VertexFormat.Mode.QUADS, 1536, false, true, state.createCompositeState(false));
