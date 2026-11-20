@@ -3,6 +3,7 @@
   "package": "com.vidal1shere.jasper.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "client.BlockEntityWithoutLevelRendererMixin",
     "client.ItemInHandLayerMixin",
     "client.ItemInHandRendererMixin",
     "client.LivingEntityRendererMixin",

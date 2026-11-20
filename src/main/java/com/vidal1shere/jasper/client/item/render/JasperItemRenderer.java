@@ -14,28 +14,22 @@ import com.vidal1shere.jasper.layer.AnimationTarget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
-import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
@@ -47,55 +41,20 @@ import java.util.Optional;
 
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = Jasper.MOD_ID, value = Dist.CLIENT)
-public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
+public final class JasperItemRenderer {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final PoseStack SCRATCH = new PoseStack();
-    private static final IClientItemExtensions EXTENSIONS = new IClientItemExtensions() {
-        @Override
-        public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-            return instance();
-        }
-    };
+    private static final Map<ModelLayerLocation, Optional<AnimatedItemModel>> MODELS = new HashMap<>();
 
-    @Nullable
-    private static JasperItemRenderer instance;
     // renderByItem gets no entity, so the hand renderers set it
     @Nullable
     private static LivingEntity holder;
     @Nullable
     private static InteractionHand holderHand;
 
-    private final Map<ModelLayerLocation, Optional<AnimatedItemModel>> models = new HashMap<>();
-
-    private JasperItemRenderer(Minecraft minecraft) {
-        super(minecraft.getBlockEntityRenderDispatcher(), minecraft.getEntityModels());
-    }
-
-    public static JasperItemRenderer instance() {
-        if (instance == null) {
-            instance = new JasperItemRenderer(Minecraft.getInstance());
-        }
-        return instance;
-    }
-
-    // Last, so items with client extensions of their own keep them
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRegisterClientExtensions(RegisterClientExtensionsEvent event) {
-        for (Item item : BuiltInRegistries.ITEM) {
-            if (item instanceof AnimatedItem && !event.isItemRegistered(item)) {
-                event.registerItem(EXTENSIONS, item);
-            }
-        }
-    }
-
-    // Not the renderer: it is made on the first render, once the block entity renderers exist
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener((ResourceManagerReloadListener) manager -> {
-            if (instance != null) {
-                instance.models.clear();
-            }
-        });
+        event.registerReloadListener((ResourceManagerReloadListener) manager -> MODELS.clear());
     }
 
     public static void setHolder(LivingEntity entity, InteractionHand hand) {
@@ -108,15 +67,15 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
         holderHand = null;
     }
 
-    @Override
-    public void renderByItem(ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
+    // False when the model of this display context is not a jasper:animated one, so the caller draws the item
+    public static boolean render(ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
         JasperItemModel baked = resolve(stack, displayContext);
         if (baked == null) {
-            return;
+            return false;
         }
-        AnimatedItemModel model = models.computeIfAbsent(baked.model(), JasperItemRenderer::bake).orElse(null);
+        AnimatedItemModel model = MODELS.computeIfAbsent(baked.model(), JasperItemRenderer::bake).orElse(null);
         if (model == null) {
-            return;
+            return true;
         }
         ResourceLocation texture = baked.texture();
         if (stack.getItem() instanceof AnimatedItem item) {
@@ -142,6 +101,7 @@ public final class JasperItemRenderer extends BlockEntityWithoutLevelRenderer {
             renderAttachment(stack, model, attachment.getKey(), attachment.getValue(), poseStack, buffer, packedLight, packedOverlay);
         }
         poseStack.popPose();
+        return true;
     }
 
     private static void renderAttachment(ItemStack stack, AnimatedItemModel model, ItemAttachment attachment, BakedModel attached, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
