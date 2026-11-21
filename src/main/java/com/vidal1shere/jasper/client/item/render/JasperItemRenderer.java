@@ -73,7 +73,14 @@ public final class JasperItemRenderer {
         if (baked == null) {
             return false;
         }
-        AnimatedItemModel model = MODELS.computeIfAbsent(baked.model(), JasperItemRenderer::bake).orElse(null);
+        ModelLayerLocation layer = baked.model();
+        if (stack.getItem() instanceof AnimatedItem item) {
+            String override = item.modelLayer(stack, holder, holderHand);
+            if (override != null) {
+                layer = new ModelLayerLocation(layer.getModel(), override);
+            }
+        }
+        AnimatedItemModel model = MODELS.computeIfAbsent(layer, JasperItemRenderer::bake).orElse(null);
         if (model == null) {
             return true;
         }

@@ -19,6 +19,11 @@ public interface AnimatedItem {
         return null;
     }
 
+    @Nullable
+    default String modelLayer(ItemStack stack, @Nullable LivingEntity holder, @Nullable InteractionHand hand) {
+        return null;
+    }
+
     default void setAnimation(LivingEntity holder, InteractionHand hand, ResourceLocation animation) {
         setAnimation(holder, hand, JasperLayers.BASE, animation);
     }
