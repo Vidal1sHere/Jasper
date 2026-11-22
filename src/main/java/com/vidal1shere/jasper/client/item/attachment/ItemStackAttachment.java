@@ -12,24 +12,37 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
 
 // jasper:item, a stack drawn with its own item model; override stack to show what the item holds, like the ammo it is loaded with
 @OnlyIn(Dist.CLIENT)
 public class ItemStackAttachment extends JasperModelAttachment {
     public static final MapCodec<ItemStackAttachment> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             AttachmentPlacement.CODEC.forGetter(JasperModelAttachment::placement),
-            BuiltInRegistries.ITEM.byNameCodec().fieldOf("item").forGetter(attachment -> attachment.stack.getItem())
-    ).apply(instance, (placement, item) -> new ItemStackAttachment(placement, new ItemStack(item))));
+            BuiltInRegistries.ITEM.byNameCodec().fieldOf("item").forGetter(attachment -> attachment.stack.getItem()),
+            ItemDisplayContext.CODEC.optionalFieldOf("display_context", ItemDisplayContext.NONE).forGetter(attachment -> attachment.displayContext)
+    ).apply(instance, (placement, item, displayContext) -> new ItemStackAttachment(placement, new ItemStack(item), displayContext)));
 
     private final ItemStack stack;
+    private final ItemDisplayContext displayContext;
 
     public ItemStackAttachment(AttachmentPlacement placement, ItemStack stack) {
+        this(placement, stack, ItemDisplayContext.NONE);
+    }
+
+    public ItemStackAttachment(AttachmentPlacement placement, ItemStack stack, ItemDisplayContext displayContext) {
         super(placement);
         this.stack = stack;
+        this.displayContext = displayContext;
     }
 
     protected ItemStack stack(AttachmentContext context) {
         return stack;
+    }
+    
+    @Nullable
+    protected ItemDisplayContext displayContext(AttachmentContext context) {
+        return displayContext;
     }
 
     // Item models draw from the block atlas; a stack with a renderer of its own may use other textures
@@ -45,7 +58,9 @@ public class ItemStackAttachment extends JasperModelAttachment {
         if (shown.isEmpty() || shown.getItem() == context.stack().getItem()) {
             return;
         }
+        ItemDisplayContext shownContext = displayContext(context) == null ? ItemDisplayContext.NONE : displayContext(context);
+        boolean leftHand = shownContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || shownContext == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(context.holder(), shown, ItemDisplayContext.NONE, false, poseStack, buffer, minecraft.level, packedLight, packedOverlay, 0);
+        minecraft.getItemRenderer().renderStatic(context.holder(), shown, shownContext, leftHand, poseStack, buffer, minecraft.level, packedLight, packedOverlay, 0);
     }
 }
