@@ -41,11 +41,24 @@ public final class PartLookup {
     // Unlike getAnyDescendantWithName, "root" is the part named root, not the root of the mesh, which models often do not render
     @Nullable
     public ModelPart part(String bone) {
-        Optional<ModelPart> part = parts.computeIfAbsent(bone, name -> root.getAllParts().filter(parent -> parent.hasChild(name)).findFirst().map(parent -> parent.getChild(name)));
+        Optional<ModelPart> part = parts.computeIfAbsent(bone, this::find);
         if (part.isEmpty() && missing.add(bone)) {
             LOGGER.warn("{} has no part named '{}', its animations skip it", owner, bone);
         }
         return part.orElse(null);
+    }
+
+    // Like part, without the warning for a missing part
+    public boolean has(String bone) {
+        return parts.computeIfAbsent(bone, this::find).isPresent();
+    }
+
+    public String owner() {
+        return owner;
+    }
+
+    private Optional<ModelPart> find(String name) {
+        return root.getAllParts().filter(parent -> parent.hasChild(name)).findFirst().map(parent -> parent.getChild(name));
     }
 
     @Nullable

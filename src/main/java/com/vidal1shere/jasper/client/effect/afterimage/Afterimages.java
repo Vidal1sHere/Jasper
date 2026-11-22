@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 // A copy is the mesh the model drew in that frame, since the model is shared and posed again for every render
@@ -51,6 +52,10 @@ public final class Afterimages {
     private static final List<PlayingAfterimage> ACTIVE = new ArrayList<>();
     private static final List<Copy> COPIES = new ArrayList<>();
     private static final Recorder RECORDER = new Recorder();
+    private static final Set<RenderType> GLINTS = Set.of(RenderType.glint(), RenderType.glintTranslucent(), RenderType.entityGlint(), RenderType.entityGlintDirect(), RenderType.armorEntityGlint());
+    private static final VertexConsumer IGNORED = new Ignored();
+    // Every render type records into the copy but the enchantment glint, which draws the same vertices a second time
+    private static final MultiBufferSource RECORDING = type -> GLINTS.contains(type) ? IGNORED : RECORDER;
 
     static PlayingAfterimage start(AfterimageEffect effect, EffectContext context) {
         PlayingAfterimage afterimage = new PlayingAfterimage(effect, context);
@@ -78,7 +83,7 @@ public final class Afterimages {
     }
 
     public static void capture(LivingEntity entity, EntityModel<?> model, PoseStack poseStack, int packedLight, ResourceLocation texture) {
-        capture(entity, AnimationTarget.MODEL, false, packedLight, texture, effect -> {
+        capture(entity, AnimationTarget.MODEL, false, packedLight, texture, List.of(), effect -> {
             if (effect.bones().isEmpty()) {
                 model.renderToBuffer(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY, -1);
             } else {
@@ -89,19 +94,22 @@ public final class Afterimages {
         });
     }
 
-    public static void captureItem(LivingEntity holder, AnimationTarget target, boolean hand, AnimatedItemModel model, PoseStack poseStack, int packedLight, ResourceLocation texture) {
-        capture(holder, target, hand, packedLight, texture, effect -> {
+    // The attachments are bones too, so an effect with bones copies the ones it names
+    public static void captureItem(LivingEntity holder, AnimationTarget target, boolean hand, AnimatedItemModel model, PoseStack poseStack, int packedLight, ResourceLocation texture, List<AttachmentDraw> attachments) {
+        capture(holder, target, hand, packedLight, texture, attachments, effect -> {
             if (effect.bones().isEmpty()) {
                 model.renderToBuffer(poseStack, RECORDER, packedLight, OverlayTexture.NO_OVERLAY, -1);
             } else {
                 for (String bone : effect.bones()) {
-                    renderChain(model.parts().chain(bone), poseStack, packedLight);
+                    if (model.parts().has(bone)) {
+                        renderChain(model.parts().chain(bone), poseStack, packedLight);
+                    }
                 }
             }
         });
     }
 
-    private static void capture(LivingEntity entity, AnimationTarget target, boolean hand, int packedLight, ResourceLocation texture, Consumer<AfterimageEffect> record) {
+    private static void capture(LivingEntity entity, AnimationTarget target, boolean hand, int packedLight, ResourceLocation texture, List<AttachmentDraw> attachments, Consumer<AfterimageEffect> record) {
         double now = entity.level().getGameTime() + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         Vec3 camera = ClientView.camera();
         for (PlayingAfterimage afterimage : ACTIVE) {
@@ -111,8 +119,19 @@ public final class Afterimages {
             AfterimageEffect effect = afterimage.effect;
             RECORDER.start();
             record.accept(effect);
+            List<Mesh> meshes = new ArrayList<>();
+            meshes.add(new Mesh(RECORDER.finish(), effect.texture() ? texture : null));
+            for (AttachmentDraw attachment : attachments) {
+                // A textured copy needs the texture the attachment drew with, without one it is left out
+                if (!effect.bones().isEmpty() && !effect.bones().contains(attachment.name()) || effect.texture() && attachment.texture() == null) {
+                    continue;
+                }
+                RECORDER.start();
+                attachment.draw().accept(RECORDING);
+                meshes.add(new Mesh(RECORDER.finish(), effect.texture() ? attachment.texture() : null));
+            }
             int light = effect.light() == Light.FULL ? LightTexture.FULL_BRIGHT : packedLight;
-            COPIES.add(new Copy(afterimage, RECORDER.finish(), camera, effect.texture() ? texture : null, light, now));
+            COPIES.add(new Copy(afterimage, List.copyOf(meshes), camera, light, now));
             afterimage.copied(now);
         }
     }
@@ -179,10 +198,12 @@ public final class Afterimages {
     }
 
     private static void render(double now, boolean hands) {
-        Map<RenderType, List<Copy>> batches = new LinkedHashMap<>();
+        Map<RenderType, List<Drawn>> batches = new LinkedHashMap<>();
         for (Copy copy : COPIES) {
             if (copy.owner.hand == hands) {
-                batches.computeIfAbsent(type(copy), type -> new ArrayList<>()).add(copy);
+                for (Mesh mesh : copy.meshes) {
+                    batches.computeIfAbsent(type(copy, mesh), type -> new ArrayList<>()).add(new Drawn(copy, mesh));
+                }
             }
         }
         if (batches.isEmpty()) {
@@ -190,10 +211,10 @@ public final class Afterimages {
         }
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
         Vec3 camera = ClientView.camera();
-        for (Map.Entry<RenderType, List<Copy>> batch : batches.entrySet()) {
+        for (Map.Entry<RenderType, List<Drawn>> batch : batches.entrySet()) {
             VertexConsumer consumer = buffers.getBuffer(batch.getKey());
-            for (Copy copy : batch.getValue()) {
-                draw(copy, consumer, camera, copy.owner.effect.argb((float) (now - copy.born)));
+            for (Drawn drawn : batch.getValue()) {
+                draw(drawn.copy, drawn.mesh, consumer, camera, drawn.copy.owner.effect.argb((float) (now - drawn.copy.born)));
             }
             buffers.endBatch(batch.getKey());
         }
@@ -205,8 +226,8 @@ public final class Afterimages {
         COPIES.clear();
     }
 
-    private static void draw(Copy copy, VertexConsumer consumer, Vec3 camera, int argb) {
-        float[] v = copy.vertices;
+    private static void draw(Copy copy, Mesh mesh, VertexConsumer consumer, Vec3 camera, int argb) {
+        float[] v = mesh.vertices;
         float dx = (float) (copy.origin.x - camera.x);
         float dy = (float) (copy.origin.y - camera.y);
         float dz = (float) (copy.origin.z - camera.z);
@@ -214,7 +235,7 @@ public final class Afterimages {
             float x = v[i] + dx;
             float y = v[i + 1] + dy;
             float z = v[i + 2] + dz;
-            if (copy.texture == null) {
+            if (mesh.texture == null) {
                 consumer.addVertex(x, y, z).setColor(argb).setLight(copy.light);
             } else {
                 consumer.addVertex(x, y, z, argb, v[i + 3], v[i + 4], OverlayTexture.NO_OVERLAY, copy.light, v[i + 5], v[i + 6], v[i + 7]);
@@ -222,12 +243,12 @@ public final class Afterimages {
         }
     }
 
-    private static RenderType type(Copy copy) {
+    private static RenderType type(Copy copy, Mesh mesh) {
         Blend blend = copy.owner.effect.blend();
-        if (copy.texture == null) {
+        if (mesh.texture == null) {
             return blend == Blend.ADDITIVE ? ADDITIVE : TRANSLUCENT;
         }
-        return blend == Blend.ADDITIVE ? RenderType.eyes(copy.texture) : RenderType.entityTranslucent(copy.texture);
+        return blend == Blend.ADDITIVE ? RenderType.eyes(mesh.texture) : RenderType.entityTranslucent(mesh.texture);
     }
 
     // No depth write, so the copies of one effect do not hide each other
@@ -242,8 +263,51 @@ public final class Afterimages {
                         .createCompositeState(false));
     }
 
+    // Something an item attachment draws, with the texture its textured copies use (null leaves it out of them)
+    public record AttachmentDraw(String name, @Nullable ResourceLocation texture, Consumer<MultiBufferSource> draw) {
+    }
+
     // Vertices are relative to the camera position they were captured at, origin
-    private record Copy(PlayingAfterimage owner, float[] vertices, Vec3 origin, @Nullable ResourceLocation texture, int light, double born) {
+    private record Copy(PlayingAfterimage owner, List<Mesh> meshes, Vec3 origin, int light, double born) {
+    }
+
+    // A texture of null draws the flat silhouette
+    private record Mesh(float[] vertices, @Nullable ResourceLocation texture) {
+    }
+
+    private record Drawn(Copy copy, Mesh mesh) {
+    }
+
+    private static final class Ignored implements VertexConsumer {
+        @Override
+        public VertexConsumer addVertex(float x, float y, float z) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv(float u, float v) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv1(int u, int v) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv2(int u, int v) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setNormal(float x, float y, float z) {
+            return this;
+        }
     }
 
     private static final class Recorder implements VertexConsumer {

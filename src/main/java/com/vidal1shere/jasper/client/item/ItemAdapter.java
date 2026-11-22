@@ -16,6 +16,7 @@ import com.vidal1shere.jasper.item.ItemAnimationDriver;
 import com.vidal1shere.jasper.layer.AnimationTarget;
 import com.vidal1shere.jasper.layer.JasperLayers;
 import com.vidal1shere.jasper.layer.Layer;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -27,6 +28,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
@@ -72,11 +74,11 @@ public final class ItemAdapter {
         }
     }
 
-    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, boolean firstPersonView, PoseStack poseStack, float partialTick) {
+    public static void applyParts(LivingEntity entity, InteractionHand hand, PartLookup parts, Map<String, ModelPart> extra, boolean firstPersonView, PoseStack poseStack, float partialTick) {
         if (evaluate(entity, hand, firstPersonView, partialTick) == 0) {
             return;
         }
-        FRAMES.apply(parts::part, NOT_PARTS);
+        FRAMES.apply(bone -> extra.containsKey(bone) ? extra.get(bone) : parts.part(bone), NOT_PARTS);
         if (hasLocators() && (firstPersonView || LocatorCapture.inLevel())) {
             Matrix4f root = new Matrix4f(poseStack.last().pose());
             LocatorCapture.capture(entity, AnimationTarget.of(hand), FRAMES.frames(), FRAMES.size(), bone -> bone.equals(BONE) ? null : parts.matrix(root, bone), UnaryOperator.identity(), PIXEL);
