@@ -1,6 +1,7 @@
 package com.vidal1shere.jasper.client.animation;
 
 import com.vidal1shere.jasper.client.ClientAttachments;
+import com.vidal1shere.jasper.client.animation.locator.Locator;
 import com.vidal1shere.jasper.client.attachment.ClientAnimationData;
 import com.vidal1shere.jasper.client.attachment.LayerState;
 import com.vidal1shere.jasper.client.molang.BuiltinQueries;
@@ -103,7 +104,8 @@ public final class LayerFrames {
                     continue;
                 }
                 for (String bone : animation.keyframes().bones().keySet()) {
-                    if (!animation.locators().containsKey(bone) && !ignored.contains(bone)) {
+                    Locator locator = animation.locators().get(bone);
+                    if ((locator == null || !locator.animated()) && !ignored.contains(bone)) {
                         BONES.add(bone);
                     }
                 }

@@ -131,7 +131,7 @@ public final class Afterimages {
                 meshes.add(new Mesh(RECORDER.finish(), effect.texture() ? attachment.texture() : null));
             }
             int light = effect.light() == Light.FULL ? LightTexture.FULL_BRIGHT : packedLight;
-            COPIES.add(new Copy(afterimage, List.copyOf(meshes), camera, light, now));
+            COPIES.add(new Copy(afterimage, List.copyOf(meshes), center(meshes), camera, light, now));
             afterimage.copied(now);
         }
     }
@@ -214,7 +214,8 @@ public final class Afterimages {
         for (Map.Entry<RenderType, List<Drawn>> batch : batches.entrySet()) {
             VertexConsumer consumer = buffers.getBuffer(batch.getKey());
             for (Drawn drawn : batch.getValue()) {
-                draw(drawn.copy, drawn.mesh, consumer, camera, drawn.copy.owner.effect.argb((float) (now - drawn.copy.born)));
+                float age = (float) (now - drawn.copy.born);
+                draw(drawn.copy, drawn.mesh, consumer, camera, drawn.copy.owner.effect.argb(age), drawn.copy.owner.effect.scaleAt(age));
             }
             buffers.endBatch(batch.getKey());
         }
@@ -226,21 +227,43 @@ public final class Afterimages {
         COPIES.clear();
     }
 
-    private static void draw(Copy copy, Mesh mesh, VertexConsumer consumer, Vec3 camera, int argb) {
+    private static void draw(Copy copy, Mesh mesh, VertexConsumer consumer, Vec3 camera, int argb, float scale) {
         float[] v = mesh.vertices;
+        float[] c = copy.center;
         float dx = (float) (copy.origin.x - camera.x);
         float dy = (float) (copy.origin.y - camera.y);
         float dz = (float) (copy.origin.z - camera.z);
         for (int i = 0; i < v.length; i += Recorder.STRIDE) {
-            float x = v[i] + dx;
-            float y = v[i + 1] + dy;
-            float z = v[i + 2] + dz;
+            float x = c[0] + (v[i] - c[0]) * scale + dx;
+            float y = c[1] + (v[i + 1] - c[1]) * scale + dy;
+            float z = c[2] + (v[i + 2] - c[2]) * scale + dz;
             if (mesh.texture == null) {
                 consumer.addVertex(x, y, z).setColor(argb).setLight(copy.light);
             } else {
                 consumer.addVertex(x, y, z, argb, v[i + 3], v[i + 4], OverlayTexture.NO_OVERLAY, copy.light, v[i + 5], v[i + 6], v[i + 7]);
             }
         }
+    }
+
+    // Of every mesh together, so the attachments scale with the model as one
+    private static float[] center(List<Mesh> meshes) {
+        float[] min = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE};
+        float[] max = {-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        boolean empty = true;
+        for (Mesh mesh : meshes) {
+            float[] vertices = mesh.vertices;
+            for (int i = 0; i < vertices.length; i += Recorder.STRIDE) {
+                empty = false;
+                for (int axis = 0; axis < 3; axis++) {
+                    min[axis] = Math.min(min[axis], vertices[i + axis]);
+                    max[axis] = Math.max(max[axis], vertices[i + axis]);
+                }
+            }
+        }
+        if (empty) {
+            return new float[3];
+        }
+        return new float[]{(min[0] + max[0]) * 0.5F, (min[1] + max[1]) * 0.5F, (min[2] + max[2]) * 0.5F};
     }
 
     private static RenderType type(Copy copy, Mesh mesh) {
@@ -268,7 +291,7 @@ public final class Afterimages {
     }
 
     // Vertices are relative to the camera position they were captured at, origin
-    private record Copy(PlayingAfterimage owner, List<Mesh> meshes, Vec3 origin, int light, double born) {
+    private record Copy(PlayingAfterimage owner, List<Mesh> meshes, float[] center, Vec3 origin, int light, double born) {
     }
 
     // A texture of null draws the flat silhouette

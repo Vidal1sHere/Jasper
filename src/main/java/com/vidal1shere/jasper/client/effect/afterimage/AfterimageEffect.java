@@ -13,6 +13,7 @@ import com.vidal1shere.jasper.client.effect.spec.Light;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FastColor;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -23,14 +24,17 @@ import java.util.Optional;
 
 // Game ticks
 @OnlyIn(Dist.CLIENT)
-public record AfterimageEffect(List<String> bones, TextColor color, float alpha, Fade fadeIn, float duration, Fade fadeOut, Optional<Float> interval,
+public record AfterimageEffect(List<String> bones, TextColor color, float alpha, float scale, float endScale, Fade fadeIn, float duration, Fade fadeOut, Optional<Float> interval,
                                boolean texture, Blend blend, Light light) implements AnimationEffect {
     private static final Codec<Float> TICKS = EffectCodecs.number(0.0F, Float.MAX_VALUE);
+    private static final Codec<Float> SCALE = EffectCodecs.number(0.0F, Float.MAX_VALUE);
 
     public static final MapCodec<AfterimageEffect> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.STRING.listOf().optionalFieldOf("bones", List.of()).forGetter(AfterimageEffect::bones),
             TextColor.CODEC.optionalFieldOf("color", TextColor.fromLegacyFormat(ChatFormatting.WHITE)).forGetter(AfterimageEffect::color),
             EffectCodecs.number(0.0F, 1.0F).optionalFieldOf("alpha", 0.5F).forGetter(AfterimageEffect::alpha),
+            SCALE.optionalFieldOf("scale", 1.0F).forGetter(AfterimageEffect::scale),
+            SCALE.optionalFieldOf("end_scale", 1.0F).forGetter(AfterimageEffect::endScale),
             Fade.CODEC.optionalFieldOf("fade_in", Fade.NONE).forGetter(AfterimageEffect::fadeIn),
             TICKS.optionalFieldOf("duration", 2.0F).forGetter(AfterimageEffect::duration),
             Fade.CODEC.optionalFieldOf("fade_out", Fade.of(6.0F)).forGetter(AfterimageEffect::fadeOut),
@@ -56,6 +60,11 @@ public record AfterimageEffect(List<String> bones, TextColor color, float alpha,
 
     float lifetime() {
         return fadeIn.duration() + duration + fadeOut.duration();
+    }
+
+    float scaleAt(float age) {
+        float lifetime = lifetime();
+        return Mth.lerp(lifetime <= 0.0F ? 1.0F : Mth.clamp(age / lifetime, 0.0F, 1.0F), scale, endScale);
     }
 
     int argb(float age) {
