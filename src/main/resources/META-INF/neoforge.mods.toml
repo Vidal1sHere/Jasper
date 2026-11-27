@@ -6,6 +6,9 @@ license="MIT"
 modId="jasper"
 version="1.0.0"
 displayName="Jasper"
+credits = '''
+Hussar: Animation Trails;
+'''
 authors="Vidal1sHere"
 description='''
 Keyframe animations for the held item, player model and entities.
